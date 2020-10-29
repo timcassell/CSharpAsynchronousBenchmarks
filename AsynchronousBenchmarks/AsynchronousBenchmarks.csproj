@@ -17,4 +17,9 @@
     <PackageReference Include="BenchmarkDotNet" Version="0.12.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\ProtoPromise\Runtime\ProtoPromise.csproj" />
+    <ProjectReference Include="..\UniTask\src\UniTask.NetCore\UniTask.NetCore.csproj" />
+  </ItemGroup>
+
 </Project>

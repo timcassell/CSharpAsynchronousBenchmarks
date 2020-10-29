@@ -1,0 +1,6 @@
+[submodule "ProtoPromise"]
+	path = ProtoPromise
+	url = https://github.com/timcassell/ProtoPromise.git
+[submodule "UniTask"]
+	path = UniTask
+	url = https://github.com/Cysharp/UniTask.git
