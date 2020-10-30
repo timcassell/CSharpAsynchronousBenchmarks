@@ -22,6 +22,10 @@ Frequency=2746679 Hz, Resolution=364.0760 ns, Timer=TSC
   Job-IAWAXN : Mono 6.10.0 (Visual Studio), X64 
 ```
 
+- `Proto_N` = ProtoPromise with no object pooling.
+- `Proto_A` = ProtoPromise with all object pooling.
+- ProtoPromise progress is disabled for these benchmarks.
+
 ### ContinueWith Benchmarks
 
 ```
