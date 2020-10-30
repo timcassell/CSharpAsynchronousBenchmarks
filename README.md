@@ -26,6 +26,9 @@ Frequency=2746679 Hz, Resolution=364.0760 ns, Timer=TSC
 - `Proto_A` = ProtoPromise with all object pooling.
 - ProtoPromise progress is disabled for these benchmarks.
 
+Note: RSG Promises don't support ContinueWith returning simple values, so that part of the benchmark was left out (so it has an unfair advantage).
+RSG Promises also do not support async/await, so those were omitted.
+
 ### ContinueWith Benchmarks
 
 ```
