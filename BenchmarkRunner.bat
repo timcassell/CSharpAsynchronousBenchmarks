@@ -1,0 +1,2 @@
+AsynchronousBenchmarks\bin\Release\net472\AsynchronousBenchmarks.exe
+PAUSE

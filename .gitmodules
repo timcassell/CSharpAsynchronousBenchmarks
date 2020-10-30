@@ -4,3 +4,6 @@
 [submodule "UniTask"]
 	path = UniTask
 	url = https://github.com/Cysharp/UniTask.git
+[submodule "RSGPromise"]
+	path = RSGPromise
+	url = https://github.com/Real-Serious-Games/C-Sharp-Promise.git

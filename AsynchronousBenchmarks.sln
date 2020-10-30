@@ -5,10 +5,6 @@ VisualStudioVersion = 16.0.30621.155
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AsynchronousBenchmarks", "AsynchronousBenchmarks\AsynchronousBenchmarks.csproj", "{9CDE46BB-E3BB-4794-9BEA-9BB75D579754}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UniTask.NetCore", "UniTask\src\UniTask.NetCore\UniTask.NetCore.csproj", "{DD25D0A9-C495-4045-B7E0-63917D7CEC15}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProtoPromise", "ProtoPromise\Runtime\ProtoPromise.csproj", "{115DFACF-E1BD-48DE-A5CD-AAEE26B8FCFA}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -19,14 +15,6 @@ Global
 		{9CDE46BB-E3BB-4794-9BEA-9BB75D579754}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9CDE46BB-E3BB-4794-9BEA-9BB75D579754}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9CDE46BB-E3BB-4794-9BEA-9BB75D579754}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DD25D0A9-C495-4045-B7E0-63917D7CEC15}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DD25D0A9-C495-4045-B7E0-63917D7CEC15}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DD25D0A9-C495-4045-B7E0-63917D7CEC15}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DD25D0A9-C495-4045-B7E0-63917D7CEC15}.Release|Any CPU.Build.0 = Release|Any CPU
-		{115DFACF-E1BD-48DE-A5CD-AAEE26B8FCFA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{115DFACF-E1BD-48DE-A5CD-AAEE26B8FCFA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{115DFACF-E1BD-48DE-A5CD-AAEE26B8FCFA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{115DFACF-E1BD-48DE-A5CD-AAEE26B8FCFA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

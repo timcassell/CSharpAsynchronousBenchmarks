@@ -1,6 +1,5 @@
 ﻿using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
-using System;
 
 [assembly: SimpleJob(BenchmarkDotNet.Engines.RunStrategy.Throughput, BenchmarkDotNet.Jobs.RuntimeMoniker.Mono)]
 [assembly: SimpleJob(BenchmarkDotNet.Engines.RunStrategy.Throughput, BenchmarkDotNet.Jobs.RuntimeMoniker.CoreRt31)]
@@ -18,7 +17,6 @@ namespace AsynchronousBenchmarks
             BenchmarkRunner.Run<ContinuationBenchmarks>();
             BenchmarkRunner.Run<AwaitBenchmarks>();
             BenchmarkRunner.Run<AsyncBenchmarks>();
-            Console.ReadKey();
         }
     }
 

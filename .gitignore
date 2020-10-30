@@ -177,14 +177,5 @@ paket-files/
 # Visual Studio 2015 cache directory
 /.vs/
  
- 
-# Unity3D generated meta files
-*.pidb.meta
-# Script meta files
-*.cs.meta
- 
-# Unity3D Generated File On Crash Reports
-sysinfo.txt
-*.blend1
-[Ll]ibrary/
-[Ll]ibraries/
+# Benchmark artifacts
+/BenchmarkDotNet.Artifacts/
