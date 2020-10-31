@@ -1,5 +1,6 @@
 ﻿using BenchmarkDotNet.Attributes;
 using RSG;
+using System;
 
 namespace AsynchronousBenchmarks
 {
@@ -30,6 +31,29 @@ namespace AsynchronousBenchmarks
         }
     }
 
+    // RSG doesn't support all ContinueWiths, so create those extension methods here to match other benchmarks.
+    static class RSGPromiseExtensions
+    {
+        public static IPromise<T> ContinueWith<T>(this IPromise promise, Func<T> callback)
+        {
+            return promise.ContinueWith(() => Promise<T>.Resolved(callback()));
+        }
+
+        public static IPromise ContinueWith<T>(this IPromise<T> promise, Action callback)
+        {
+            return promise.ContinueWith(() =>
+            {
+                callback();
+                return Promise.Resolved();
+            });
+        }
+
+        public static IPromise<TConvert> ContinueWith<T, TConvert>(this IPromise<T> promise, Func<TConvert> callback)
+        {
+            return promise.ContinueWith(() => Promise<TConvert>.Resolved(callback()));
+        }
+    }
+
     partial class ContinuationBenchmarks
     {
         [GlobalSetup(Target = nameof(RSGPromise))]
@@ -52,12 +76,12 @@ namespace AsynchronousBenchmarks
 
             for (int i = 0; i < N; ++i)
             {
-                // Not a fair comparison since RSG doesn't support ContinueWith returning void or a simple value.
-                // And apparently it doesn't let you convert from Promise to Promise<T> returning a simple value using then, either...
                 promise = promise
-                    //.ContinueWith(_ => { })
-                    //.ContinueWith(_ => Program.vector)
-                    //.ContinueWith(_ => Program.obj)
+                    // Extension methods created here.
+                    .ContinueWith(() => { })
+                    .ContinueWith(() => Program.vector)
+                    .ContinueWith(() => Program.obj)
+                    // Native methods.
                     .ContinueWith(() => RSGPromiseHelper.rsgVoid)
                     .ContinueWith(() => RSGPromiseHelper.rsgVector)
                     .ContinueWith(() => RSGPromiseHelper.rsgObject);

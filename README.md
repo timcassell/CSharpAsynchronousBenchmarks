@@ -26,49 +26,49 @@ Frequency=2746679 Hz, Resolution=364.0760 ns, Timer=TSC
 - `Proto_A` = ProtoPromise with all object pooling.
 - ProtoPromise progress is disabled for these benchmarks.
 
-Note: RSG Promises don't support ContinueWith returning simple values, so that part of the benchmark was left out (so it has an unfair advantage).
+Note: RSG Promises don't support all ContinueWith methods natively, so I added extensions for this benchmark. May not be representative of its performance if they get added in the future.
 RSG Promises also do not support async/await, so those were omitted.
 
 ### ContinueWith Benchmarks
 
 ```
-|     Method |        Job |    Runtime |     N |        Mean |       Error |      StdDev |      Median | Ratio | RatioSD |     Gen 0 |    Gen 1 |    Gen 2 |  Allocated |
-|----------- |----------- |----------- |------ |------------:|------------:|------------:|------------:|------:|--------:|----------:|---------:|---------:|-----------:|
-|    Proto_N | Job-KZKWXR |   .NET 4.8 |   100 |    804.2 μs |    13.89 μs |    12.99 μs |    803.8 μs |  1.40 |    0.02 |   72.2656 |  35.1563 |   4.8828 |    57089 B |
-|    Proto_A | Job-KZKWXR |   .NET 4.8 |   100 |    203.7 μs |     3.69 μs |     5.06 μs |    202.9 μs |  0.36 |    0.01 |         - |        - |        - |          - |
-| RSGPromise | Job-KZKWXR |   .NET 4.8 |   100 |    562.1 μs |    11.22 μs |    16.79 μs |    552.5 μs |  0.99 |    0.03 |  121.0938 |  49.8047 |        - |   581799 B |
-| SystemTask | Job-KZKWXR |   .NET 4.8 |   100 |    576.5 μs |     4.45 μs |     4.16 μs |    574.8 μs |  1.00 |    0.00 |   88.8672 |  11.7188 |        - |   103615 B |
-|    UniTask | Job-KZKWXR |   .NET 4.8 |   100 |    215.7 μs |     1.35 μs |     1.27 μs |    215.8 μs |  0.37 |    0.00 |         - |        - |        - |      118 B |
-|            |            |            |       |             |             |             |             |       |         |           |          |          |            |
-|    Proto_N | Job-OUGRBP | CoreRt 3.1 |   100 |    383.9 μs |     4.52 μs |     4.23 μs |    384.0 μs |  1.41 |    0.02 |   18.0664 |   8.7891 |   0.9766 |    56912 B |
-|    Proto_A | Job-OUGRBP | CoreRt 3.1 |   100 |    223.8 μs |     2.22 μs |     2.08 μs |    223.6 μs |  0.82 |    0.01 |         - |        - |        - |          - |
-| RSGPromise | Job-OUGRBP | CoreRt 3.1 |   100 |    447.5 μs |     2.09 μs |     1.96 μs |    447.3 μs |  1.65 |    0.01 |  120.6055 |  31.7383 |        - |   508784 B |
-| SystemTask | Job-OUGRBP | CoreRt 3.1 |   100 |    271.3 μs |     1.95 μs |     1.52 μs |    271.6 μs |  1.00 |    0.00 |   30.2734 |        - |        - |    96096 B |
-|    UniTask | Job-OUGRBP | CoreRt 3.1 |   100 |    171.1 μs |     1.48 μs |     1.38 μs |    170.9 μs |  0.63 |    0.01 |         - |        - |        - |      144 B |
-|            |            |            |       |             |             |             |             |       |         |           |          |          |            |
-|    Proto_N | Job-IAWAXN |       Mono |   100 |    554.1 μs |     2.81 μs |     2.63 μs |    554.4 μs |  0.95 |    0.01 |   10.7422 |   0.9766 |   0.9766 |          - |
-|    Proto_A | Job-IAWAXN |       Mono |   100 |    178.5 μs |     3.50 μs |     4.43 μs |    177.1 μs |  0.31 |    0.01 |         - |        - |        - |          - |
-| RSGPromise | Job-IAWAXN |       Mono |   100 |  1,086.9 μs |     8.30 μs |     6.93 μs |  1,087.9 μs |  1.87 |    0.02 |  193.3594 |   5.8594 |   5.8594 |          - |
-| SystemTask | Job-IAWAXN |       Mono |   100 |    581.0 μs |     2.40 μs |     2.00 μs |    581.2 μs |  1.00 |    0.00 |   55.6641 |        - |        - |          - |
-|    UniTask | Job-IAWAXN |       Mono |   100 |          NA |          NA |          NA |          NA |     ? |       ? |         - |        - |        - |          - |
-|            |            |            |       |             |             |             |             |       |         |           |          |          |            |
-|    Proto_N | Job-KZKWXR |   .NET 4.8 | 10000 | 71,054.3 μs | 1,205.71 μs | 1,127.82 μs | 71,082.1 μs |  0.98 |    0.02 | 1000.0000 | 375.0000 | 125.0000 |  5696921 B |
-|    Proto_A | Job-KZKWXR |   .NET 4.8 | 10000 | 20,566.0 μs |   270.39 μs |   239.69 μs | 20,527.8 μs |  0.29 |    0.00 |         - |        - |        - |          - |
-| RSGPromise | Job-KZKWXR |   .NET 4.8 | 10000 |          NA |          NA |          NA |          NA |     ? |       ? |         - |        - |        - |          - |
-| SystemTask | Job-KZKWXR |   .NET 4.8 | 10000 | 72,157.0 μs |   599.35 μs |   560.63 μs | 71,944.8 μs |  1.00 |    0.00 | 1714.2857 | 857.1429 | 142.8571 | 10374757 B |
-|    UniTask | Job-KZKWXR |   .NET 4.8 | 10000 |          NA |          NA |          NA |          NA |     ? |       ? |         - |        - |        - |          - |
-|            |            |            |       |             |             |             |             |       |         |           |          |          |            |
-|    Proto_N | Job-OUGRBP | CoreRt 3.1 | 10000 | 39,487.0 μs |   711.85 μs |   665.86 μs | 39,416.1 μs |  0.97 |    0.02 |  937.5000 | 375.0000 | 125.0000 |  5680214 B |
-|    Proto_A | Job-OUGRBP | CoreRt 3.1 | 10000 | 23,530.0 μs |   453.84 μs |   829.87 μs | 23,166.0 μs |  0.58 |    0.03 |         - |        - |        - |          - |
-| RSGPromise | Job-OUGRBP | CoreRt 3.1 | 10000 |          NA |          NA |          NA |          NA |     ? |       ? |         - |        - |        - |          - |
-| SystemTask | Job-OUGRBP | CoreRt 3.1 | 10000 | 40,688.3 μs |   168.18 μs |   157.31 μs | 40,727.4 μs |  1.00 |    0.00 | 1615.3846 | 692.3077 | 230.7692 |  9602767 B |
-|    UniTask | Job-OUGRBP | CoreRt 3.1 | 10000 |          NA |          NA |          NA |          NA |     ? |       ? |         - |        - |        - |          - |
-|            |            |            |       |             |             |             |             |       |         |           |          |          |            |
-|    Proto_N | Job-IAWAXN |       Mono | 10000 | 69,269.8 μs |   644.23 μs |   571.10 μs | 69,287.5 μs |     ? |       ? | 1000.0000 | 125.0000 | 125.0000 |          - |
-|    Proto_A | Job-IAWAXN |       Mono | 10000 | 18,658.0 μs |   292.04 μs |   273.17 μs | 18,621.7 μs |     ? |       ? |         - |        - |        - |          - |
-| RSGPromise | Job-IAWAXN |       Mono | 10000 |          NA |          NA |          NA |          NA |     ? |       ? |         - |        - |        - |          - |
-| SystemTask | Job-IAWAXN |       Mono | 10000 |          NA |          NA |          NA |          NA |     ? |       ? |         - |        - |        - |          - |
-|    UniTask | Job-IAWAXN |       Mono | 10000 |          NA |          NA |          NA |          NA |     ? |       ? |         - |        - |        - |          - |
+|     Method |        Job |    Runtime |     N |        Mean |       Error |      StdDev | Ratio | RatioSD |     Gen 0 |    Gen 1 |    Gen 2 |  Allocated |
+|----------- |----------- |----------- |------ |------------:|------------:|------------:|------:|--------:|----------:|---------:|---------:|-----------:|
+|    Proto_N | Job-KZKWXR |   .NET 4.8 |   100 |    820.0 μs |    16.35 μs |    33.39 μs |  1.29 |    0.03 |   72.2656 |  36.1328 |   4.8828 |    57090 B |
+|    Proto_A | Job-KZKWXR |   .NET 4.8 |   100 |    210.0 μs |     2.15 μs |     1.90 μs |  0.34 |    0.00 |         - |        - |        - |          - |
+| RSGPromise | Job-KZKWXR |   .NET 4.8 |   100 |  1,546.8 μs |     9.34 μs |     8.28 μs |  2.52 |    0.02 |  248.0469 |  99.6094 |        - |  1206041 B |
+| SystemTask | Job-KZKWXR |   .NET 4.8 |   100 |    612.3 μs |     4.08 μs |     3.18 μs |  1.00 |    0.00 |   88.8672 |  11.7188 |        - |   103615 B |
+|    UniTask | Job-KZKWXR |   .NET 4.8 |   100 |    223.6 μs |     1.10 μs |     1.03 μs |  0.37 |    0.00 |         - |        - |        - |      118 B |
+|            |            |            |       |             |             |             |       |         |           |          |          |            |
+|    Proto_N | Job-OUGRBP | CoreRt 3.1 |   100 |    387.8 μs |     5.23 μs |     4.89 μs |  1.36 |    0.02 |   18.0664 |   8.7891 |   0.9766 |    56912 B |
+|    Proto_A | Job-OUGRBP | CoreRt 3.1 |   100 |    216.9 μs |     1.59 μs |     1.41 μs |  0.76 |    0.01 |         - |        - |        - |          - |
+| RSGPromise | Job-OUGRBP | CoreRt 3.1 |   100 |  1,274.8 μs |     3.47 μs |     3.08 μs |  4.48 |    0.03 |  187.5000 |  78.1250 |        - |  1055184 B |
+| SystemTask | Job-OUGRBP | CoreRt 3.1 |   100 |    284.0 μs |     1.94 μs |     1.91 μs |  1.00 |    0.00 |   30.2734 |        - |        - |    96096 B |
+|    UniTask | Job-OUGRBP | CoreRt 3.1 |   100 |    180.4 μs |     1.18 μs |     0.98 μs |  0.63 |    0.00 |         - |        - |        - |      144 B |
+|            |            |            |       |             |             |             |       |         |           |          |          |            |
+|    Proto_N | Job-IAWAXN |       Mono |   100 |    561.3 μs |     2.22 μs |     1.85 μs |  0.96 |    0.01 |   10.7422 |   0.9766 |   0.9766 |          - |
+|    Proto_A | Job-IAWAXN |       Mono |   100 |    179.5 μs |     3.24 μs |     3.03 μs |  0.31 |    0.01 |         - |        - |        - |          - |
+| RSGPromise | Job-IAWAXN |       Mono |   100 |  3,831.0 μs |   100.25 μs |   294.01 μs |  6.40 |    0.57 |  414.0625 |  23.4375 |  23.4375 |          - |
+| SystemTask | Job-IAWAXN |       Mono |   100 |    587.8 μs |     3.81 μs |     3.56 μs |  1.00 |    0.00 |   55.6641 |        - |        - |          - |
+|    UniTask | Job-IAWAXN |       Mono |   100 |          NA |          NA |          NA |     ? |       ? |         - |        - |        - |          - |
+|            |            |            |       |             |             |             |       |         |           |          |          |            |
+|    Proto_N | Job-KZKWXR |   .NET 4.8 | 10000 | 72,756.1 μs | 1,439.38 μs | 2,109.82 μs |  1.00 |    0.03 | 1000.0000 | 285.7143 | 142.8571 |  5697415 B |
+|    Proto_A | Job-KZKWXR |   .NET 4.8 | 10000 | 20,833.1 μs |   278.07 μs |   217.10 μs |  0.29 |    0.00 |         - |        - |        - |          - |
+| RSGPromise | Job-KZKWXR |   .NET 4.8 | 10000 |          NA |          NA |          NA |     ? |       ? |         - |        - |        - |          - |
+| SystemTask | Job-KZKWXR |   .NET 4.8 | 10000 | 72,908.7 μs |   330.46 μs |   309.11 μs |  1.00 |    0.00 | 1714.2857 | 714.2857 | 285.7143 | 10373592 B |
+|    UniTask | Job-KZKWXR |   .NET 4.8 | 10000 |          NA |          NA |          NA |     ? |       ? |         - |        - |        - |          - |
+|            |            |            |       |             |             |             |       |         |           |          |          |            |
+|    Proto_N | Job-OUGRBP | CoreRt 3.1 | 10000 | 37,998.7 μs |   669.80 μs |   559.32 μs |  0.92 |    0.01 |  937.5000 | 375.0000 | 125.0000 |  5680606 B |
+|    Proto_A | Job-OUGRBP | CoreRt 3.1 | 10000 | 21,375.0 μs |   101.26 μs |    79.06 μs |  0.52 |    0.00 |         - |        - |        - |          - |
+| RSGPromise | Job-OUGRBP | CoreRt 3.1 | 10000 |          NA |          NA |          NA |     ? |       ? |         - |        - |        - |          - |
+| SystemTask | Job-OUGRBP | CoreRt 3.1 | 10000 | 41,297.7 μs |   196.46 μs |   183.77 μs |  1.00 |    0.00 | 1615.3846 | 692.3077 | 230.7692 |  9602418 B |
+|    UniTask | Job-OUGRBP | CoreRt 3.1 | 10000 |          NA |          NA |          NA |     ? |       ? |         - |        - |        - |          - |
+|            |            |            |       |             |             |             |       |         |           |          |          |            |
+|    Proto_N | Job-IAWAXN |       Mono | 10000 | 70,001.1 μs |   284.76 μs |   266.37 μs |     ? |       ? | 1000.0000 | 125.0000 | 125.0000 |          - |
+|    Proto_A | Job-IAWAXN |       Mono | 10000 | 19,197.5 μs |   382.81 μs |   628.97 μs |     ? |       ? |         - |        - |        - |          - |
+| RSGPromise | Job-IAWAXN |       Mono | 10000 |          NA |          NA |          NA |     ? |       ? |         - |        - |        - |          - |
+| SystemTask | Job-IAWAXN |       Mono | 10000 |          NA |          NA |          NA |     ? |       ? |         - |        - |        - |          - |
+|    UniTask | Job-IAWAXN |       Mono | 10000 |          NA |          NA |          NA |     ? |       ? |         - |        - |        - |          - |
 
 Benchmarks with issues:
   ContinuationBenchmarks.UniTask: Job-IAWAXN(Runtime=Mono, RunStrategy=Throughput) [N=100]
