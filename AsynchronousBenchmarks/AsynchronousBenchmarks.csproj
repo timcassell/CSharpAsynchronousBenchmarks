@@ -14,23 +14,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="ProtoPromise.dll" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.12.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="ProtoPromise">
-      <HintPath>..\ProtoPromise\Runtime\bin\Release\netstandard2.0\ProtoPromise.dll</HintPath>
-    </Reference>
-    <Reference Include="RSG.Promise">
-      <HintPath>..\RSGPromise\src\bin\Release\netstandard2.0\RSG.Promise.dll</HintPath>
-    </Reference>
-    <Reference Include="UniTask">
-      <HintPath>..\UniTask\src\UniTask.NetCore\bin\Release\netstandard2.0\UniTask.dll</HintPath>
-    </Reference>
+    <ProjectReference Include="..\ProtoPromise\Runtime\ProtoPromise.csproj" />
+    <ProjectReference Include="..\RSGPromise\src\RSG.Promise.csproj" />
+    <ProjectReference Include="..\UniTask\src\UniTask.NetCore\UniTask.NetCore.csproj" />
   </ItemGroup>
 
 </Project>
