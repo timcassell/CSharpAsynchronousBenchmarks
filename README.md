@@ -1,9 +1,9 @@
 ﻿This project is built to benchmark C# asynchronous libraries against each other.
 
 To run the benchmarks on your machine:
-  1. Open `AsynchronousBenchmarks.sln` in Visual Studio 2019 or later, then build the solution.
-  2. Run `BenchmarkRunner.bat`.
-    - Some benchmarks crash, causing windows to show a popup. You must close that popup for the rest of the benchmarks to continue.
+  1. Init git submodules by running `git submodule update --init --recursive`
+Open `AsynchronousBenchmarks.sln` in Visual Studio 2019 or later, then build the solution.
+  2. `dotnet run -c Release -f net472 --project .\AsynchronousBenchmarks\AsynchronousBenchmarks.csproj  --filter '*' --runtimes net472 mono netcoreapp3.1`
   3. See your results in the generated `BenchmarkDotNet.Artifacts` directory.
 
 
