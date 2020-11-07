@@ -1,14 +1,12 @@
 ﻿This project is built to benchmark C# asynchronous libraries against each other.
 
 To run the benchmarks on your machine:
-  1. Init git submodules by running `git submodule update --init --recursive`.
-  2. Build `ProtoPromise\ProtoPromise.sln` in `Release` mode.
-  3. Build `RSGPromise\C-Sharp-Promise.sln` in `Release` mode.
-  4. Build `UniTask\UniTask.NetCore.sln` in `Release` mode.
-  5. Build `AsynchronousBenchmarks.sln"` in `Release` mode.
-  6. Run `BenchmarkRunner.bat`.
+  1. Open `AsynchronousBenchmarks.sln` in Visual Studio 2019 or later, then build the solution.
+  2. Run `BenchmarkRunner.bat`.
     - Some benchmarks crash, causing windows to show a popup. You must close that popup for the rest of the benchmarks to continue.
-  7. See your results in the generated `BenchmarkDotNet.Artifacts` directory.
+  3. See your results in the generated `BenchmarkDotNet.Artifacts` directory.
+
+
 
 Here are the results after running on my 2010 desktop:
 
