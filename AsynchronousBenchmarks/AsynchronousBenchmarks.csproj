@@ -5,31 +5,30 @@
     <TargetFrameworks>netcoreapp3.1;net472</TargetFrameworks>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DefineConstants>TRACE;CSHARP_7_3_OR_NEWER;CSHARP_7_OR_LATER;PROTO_PROMISE_PROGRESS_DISABLE</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DefineConstants>TRACE;CSHARP_7_3_OR_NEWER;CSHARP_7_OR_LATER;PROTO_PROMISE_PROGRESS_DISABLE</DefineConstants>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <None Remove="ProtoPromise.dll" />
-  </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.12.1" />
+    <PackageReference Include="UniTask" Version="2.0.36" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="ProtoPromise">
-      <HintPath>..\ProtoPromise\Runtime\bin\Release\netstandard2.0\ProtoPromise.dll</HintPath>
+      <HintPath>..\BuiltDLLs\ProtoPromise_NoProgress\ProtoPromise.dll</HintPath>
     </Reference>
+    <!--
+      Removed until compile errors are fixed:
+      https://github.com/dotnet/msbuild/issues/4943
+      https://developercommunity2.visualstudio.com/t/vs-2019-can-only-use-one-reference-with-the-same-a/1247638
+    -->
+    <!--<Reference Include="ProtoPromise">
+      <HintPath>..\BuiltDLLs\ProtoPromise_NP.dll</HintPath>
+      <Aliases>ProtoPromise_Without_Progress</Aliases>
+    </Reference>
+    <Reference Include="ProtoPromise, Configuration=Release With Progress">
+      <HintPath>..\BuiltDLLs\ProtoPromise_P.dll</HintPath>
+      <Aliases>ProtoPromise_With_Progress</Aliases>
+    </Reference>-->
     <Reference Include="RSG.Promise">
-      <HintPath>..\RSGPromise\src\bin\Release\netstandard2.0\RSG.Promise.dll</HintPath>
-    </Reference>
-    <Reference Include="UniTask">
-      <HintPath>..\UniTask\src\UniTask.NetCore\bin\Release\netstandard2.0\UniTask.dll</HintPath>
+      <HintPath>..\BuiltDLLs\RSG.Promise.dll</HintPath>
     </Reference>
   </ItemGroup>
 

@@ -1,190 +1,424 @@
 ﻿using BenchmarkDotNet.Attributes;
-using Proto.Promises;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace AsynchronousBenchmarks
 {
-    static class ProtoPromiseHelper
+    partial class ContinueWithPending
     {
-        public static Promise protoVoid;
-        public static Promise<Vector4> protoVector;
-        public static Promise<object> protoObject;
+        // No progress
 
-        public static void SetProtoPromises()
+        [IterationSetup(Targets = new[] { nameof(ProtoPromise_NN), nameof(ProtoPromise_NP) })]
+        public void SetupProtoPromisesIteration_N()
         {
-            var protoVoidSource = Promise.NewDeferred();
-            var protoVectorSource = Promise.NewDeferred<Vector4>();
-            var protoObjectSource = Promise.NewDeferred<object>();
-            protoVoid = protoVoidSource.Promise;
-            protoVector = protoVectorSource.Promise;
-            protoObject = protoObjectSource.Promise;
-            protoVoid.Retain();
-            protoVector.Retain();
-            protoObject.Retain();
-            protoVoidSource.Resolve();
-            protoVectorSource.Resolve(Program.vector);
-            protoObjectSource.Resolve(Program.obj);
+            ProtoPromise_NoProgress.ContinueWithPending.Setup(N);
         }
 
-        public static void ClearProtoPromises()
+        [IterationCleanup(Targets = new[] { nameof(ProtoPromise_NN), nameof(ProtoPromise_NP) })]
+        public void CleanupProtoPromisesIteration_N()
         {
-            protoVoid.Release();
-            protoVoid = default;
-            protoVector.Release();
-            protoVector = default;
-            protoObject.Release();
-            protoObject = default;
+            ProtoPromise_NoProgress.ContinueWithPending.Cleanup();
         }
+
+        [Benchmark(Description = "ProtoPromise")]
+        [BenchmarkCategory("No Pool")]
+        public void ProtoPromise_NN()
+        {
+            ProtoPromise_NoProgress.ContinueWithPending.ExecuteWithoutPool();
+        }
+
+        [Benchmark(Description = "ProtoPromise")]
+        [BenchmarkCategory("Pool")]
+        public void ProtoPromise_NP()
+        {
+            ProtoPromise_NoProgress.ContinueWithPending.ExecuteWithPool();
+        }
+
+        // With progress
+        // Removed until compile errors are fixed: https://github.com/dotnet/msbuild/issues/4943, https://developercommunity2.visualstudio.com/t/vs-2019-can-only-use-one-reference-with-the-same-a/1247638
+
+        //[IterationSetup(Targets = new[] { nameof(ProtoPromise_PN), nameof(ProtoPromise_PP) })]
+        //public void SetupProtoPromisesIteration_P()
+        //{
+        //    ProtoPromise_Progress.ContinueWithPending.Setup(N);
+        //}
+
+        //[IterationCleanup(Targets = new[] { nameof(ProtoPromise_PN), nameof(ProtoPromise_PP) })]
+        //public void CleanupProtoPromisesIteration_P()
+        //{
+        //    ProtoPromise_Progress.ContinueWithPending.Cleanup();
+        //}
+
+        //[Benchmark(Description = "ProtoPromise")]
+        //[BenchmarkCategory("Progress_NoPool")]
+        //public void ProtoPromise_PN()
+        //{
+        //    ProtoPromise_Progress.ContinueWithPending.ExecuteWithoutPool();
+        //}
+
+        //[Benchmark(Description = "ProtoPromise")]
+        //[BenchmarkCategory("Progress_Pool")]
+        //public void ProtoPromise_PP()
+        //{
+        //    ProtoPromise_Progress.ContinueWithPending.ExecuteWithPool();
+        //}
     }
 
-    partial class ContinuationBenchmarks
+    partial class ContinueWithResolved
     {
-        [GlobalSetup(Targets = new[] { nameof(Proto_N), nameof(Proto_A) })]
-        public void SetupProtoPromises()
+        [GlobalSetup(Targets = new[] { nameof(ProtoPromise_NN), nameof(ProtoPromise_NP) })]
+        public void SetupProtoPromises_N()
         {
-            ProtoPromiseHelper.SetProtoPromises();
+            ProtoPromise_NoProgress.ContinueWithResolved.Setup(N);
         }
 
-        [GlobalCleanup(Targets = new[] { nameof(Proto_N), nameof(Proto_A) })]
-        public void CleanupProtoPromises()
+        [GlobalCleanup(Targets = new[] { nameof(ProtoPromise_NN), nameof(ProtoPromise_NP) })]
+        public void CleanupProtoPromises_N()
         {
-            ProtoPromiseHelper.ClearProtoPromises();
+            ProtoPromise_NoProgress.ContinueWithResolved.Cleanup();
         }
 
-        [Benchmark]
-        public void Proto_N()
+        // No progress
+
+        [Benchmark(Description = "ProtoPromise")]
+        [BenchmarkCategory("No Pool")]
+        public void ProtoPromise_NN()
         {
-            Promise.Config.ObjectPooling = Promise.PoolType.None;
-            Proto();
+            ProtoPromise_NoProgress.ContinueWithResolved.ExecuteWithoutPool();
         }
 
-        [Benchmark]
-        public void Proto_A()
+        [Benchmark(Description = "ProtoPromise")]
+        [BenchmarkCategory("Pool")]
+        public void ProtoPromise_NP()
         {
-            Promise.Config.ObjectPooling = Promise.PoolType.All;
-            Proto();
+            ProtoPromise_NoProgress.ContinueWithResolved.ExecuteWithPool();
         }
 
-        private void Proto()
-        {
-            Promise<object>.Deferred deferred = Promise.NewDeferred<object>();
-            var promise = deferred.Promise;
+        // With progress
+        // Removed until compile errors are fixed: https://github.com/dotnet/msbuild/issues/4943, https://developercommunity2.visualstudio.com/t/vs-2019-can-only-use-one-reference-with-the-same-a/1247638
 
-            for (int i = 0; i < N; ++i)
-            {
-                promise = promise
-                    .ContinueWith(_ => { })
-                    .ContinueWith(_ => Program.vector)
-                    .ContinueWith(_ => Program.obj)
-                    .ContinueWith(_ => ProtoPromiseHelper.protoVoid)
-                    .ContinueWith(_ => ProtoPromiseHelper.protoVector)
-                    .ContinueWith(_ => ProtoPromiseHelper.protoObject);
-            }
+        //[GlobalSetup(Targets = new[] { nameof(ProtoPromise_PN), nameof(ProtoPromise_PP) })]
+        //public void SetupProtoPromises_P()
+        //{
+        //    ProtoPromise_Progress.ContinueWithResolved.Setup(N);
+        //}
 
-            deferred.Resolve(Program.obj);
-            Promise.Manager.HandleCompletesAndProgress();
-        }
+        //[GlobalCleanup(Targets = new[] { nameof(ProtoPromise_PN), nameof(ProtoPromise_PP) })]
+        //public void CleanupProtoPromises_P()
+        //{
+        //    ProtoPromise_Progress.ContinueWithResolved.Cleanup();
+        //}
+
+        //[Benchmark(Description = "ProtoPromise")]
+        //[BenchmarkCategory("Progress_NoPool")]
+        //public void ProtoPromise_PN()
+        //{
+        //    ProtoPromise_Progress.ContinueWithResolved.ExecuteWithoutPool();
+        //}
+
+        //[Benchmark(Description = "ProtoPromise")]
+        //[BenchmarkCategory("Progress_Pool")]
+        //public void ProtoPromise_PP()
+        //{
+        //    ProtoPromise_Progress.ContinueWithResolved.ExecuteWithPool();
+        //}
     }
 
-    partial class AwaitBenchmarks
+    partial class ContinueWithFromValue
     {
-        [GlobalSetup(Targets = new[] { nameof(Proto_N), nameof(Proto_A) })]
-        public void SetupProtoPromises()
+        [GlobalSetup(Targets = new[] { nameof(ProtoPromise_NN), nameof(ProtoPromise_NP) })]
+        public void SetupProtoPromises_N()
         {
-            ProtoPromiseHelper.SetProtoPromises();
+            ProtoPromise_NoProgress.ContinueWithFromValue.Setup(N);
         }
 
-        [GlobalCleanup(Targets = new[] { nameof(Proto_N), nameof(Proto_A) })]
-        public void CleanupProtoPromises()
+        [GlobalCleanup(Targets = new[] { nameof(ProtoPromise_NN), nameof(ProtoPromise_NP) })]
+        public void CleanupProtoPromises_N()
         {
-            ProtoPromiseHelper.ClearProtoPromises();
+            ProtoPromise_NoProgress.ContinueWithFromValue.Cleanup();
         }
 
-        [Benchmark]
-        public void Proto_N()
+        // No progress
+
+        [Benchmark(Description = "ProtoPromise")]
+        [BenchmarkCategory("No Pool")]
+        public void ProtoPromise_NN()
         {
-            Promise.Config.ObjectPooling = Promise.PoolType.None;
-            _ = Proto();
-            Promise.Manager.HandleCompletesAndProgress();
+            ProtoPromise_NoProgress.ContinueWithFromValue.ExecuteWithoutPool();
         }
 
-        [Benchmark]
-        public void Proto_A()
+        [Benchmark(Description = "ProtoPromise")]
+        [BenchmarkCategory("Pool")]
+        public void ProtoPromise_NP()
         {
-            Promise.Config.ObjectPooling = Promise.PoolType.All;
-            _ = Proto();
-            Promise.Manager.HandleCompletesAndProgress();
+            ProtoPromise_NoProgress.ContinueWithFromValue.ExecuteWithPool();
         }
 
-        private async Task<object> Proto()
-        {
-            for (int i = 0; i < N; ++i)
-            {
-                await ProtoPromiseHelper.protoVoid;
-                _ = await ProtoPromiseHelper.protoVector;
-                _ = await ProtoPromiseHelper.protoObject;
-            }
-            return Program.obj;
-        }
+        // With progress
+        // Removed until compile errors are fixed: https://github.com/dotnet/msbuild/issues/4943, https://developercommunity2.visualstudio.com/t/vs-2019-can-only-use-one-reference-with-the-same-a/1247638
+
+        //[GlobalSetup(Targets = new[] { nameof(ProtoPromise_PN), nameof(ProtoPromise_PP) })]
+        //public void SetupProtoPromises_P()
+        //{
+        //    ProtoPromise_Progress.ContinueWithFromValue.Setup(N);
+        //}
+
+        //[GlobalCleanup(Targets = new[] { nameof(ProtoPromise_PN), nameof(ProtoPromise_PP) })]
+        //public void CleanupProtoPromises_P()
+        //{
+        //    ProtoPromise_Progress.ContinueWithFromValue.Cleanup();
+        //}
+
+        //[Benchmark(Description = "ProtoPromise")]
+        //[BenchmarkCategory("Progress_NoPool")]
+        //public void ProtoPromise_PN()
+        //{
+        //    ProtoPromise_Progress.ContinueWithFromValue.ExecuteWithoutPool();
+        //}
+
+        //[Benchmark(Description = "ProtoPromise")]
+        //[BenchmarkCategory("Progress_Pool")]
+        //public void ProtoPromise_PP()
+        //{
+        //    ProtoPromise_Progress.ContinueWithFromValue.ExecuteWithPool();
+        //}
     }
 
-    partial class AsyncBenchmarks
+    partial class AwaitPending
     {
-        [Benchmark]
-        public void Proto_N()
+        // No progress
+
+        [IterationSetup(Targets = new[] { nameof(ProtoPromise_NN), nameof(ProtoPromise_NP) })]
+        public void SetupProtoPromisesIteration_N()
         {
-            Promise.Config.ObjectPooling = Promise.PoolType.None;
-            Proto();
+            ProtoPromise_NoProgress.AwaitPending.Setup(N);
         }
 
-        [Benchmark]
-        public void Proto_A()
+        [IterationCleanup(Targets = new[] { nameof(ProtoPromise_NN), nameof(ProtoPromise_NP) })]
+        public void CleanupProtoPromisesIteration_N()
         {
-            Promise.Config.ObjectPooling = Promise.PoolType.All;
-            Proto();
+            ProtoPromise_NoProgress.AwaitPending.Cleanup();
         }
 
-        private void Proto()
+        [Benchmark(Description = "ProtoPromise")]
+        [BenchmarkCategory("No Pool")]
+        public void ProtoPromise_NN()
         {
-            // Create a promise to await so that the async functions won't complete synchronously.
-            Promise.Deferred deferred = Promise.NewDeferred();
-            Promise promise = deferred.Promise;
-            long counter = 0L;
-
-            for (int i = 0; i < N; ++i)
-            {
-                _ = TaskVoid();
-                _ = TaskVector();
-                _ = TaskObject();
-            }
-
-            async Promise TaskVoid()
-            {
-                Interlocked.Increment(ref counter);
-                await promise;
-                Interlocked.Decrement(ref counter);
-            }
-
-            async Promise<Vector4> TaskVector()
-            {
-                Interlocked.Increment(ref counter);
-                await promise;
-                Interlocked.Decrement(ref counter);
-                return Program.vector;
-            }
-
-            async Promise<object> TaskObject()
-            {
-                Interlocked.Increment(ref counter);
-                await promise;
-                Interlocked.Decrement(ref counter);
-                return Program.obj;
-            }
-
-            deferred.Resolve();
-            Promise.Manager.HandleCompletesAndProgress();
-            while (Interlocked.Read(ref counter) > 0) { }
+            ProtoPromise_NoProgress.AwaitPending.ExecuteWithoutPool();
         }
+
+        [Benchmark(Description = "ProtoPromise")]
+        [BenchmarkCategory("Pool")]
+        public void ProtoPromise_NP()
+        {
+            ProtoPromise_NoProgress.AwaitPending.ExecuteWithPool();
+        }
+
+        // With progress
+        // Removed until compile errors are fixed: https://github.com/dotnet/msbuild/issues/4943, https://developercommunity2.visualstudio.com/t/vs-2019-can-only-use-one-reference-with-the-same-a/1247638
+
+        //[IterationSetup(Targets = new[] { nameof(ProtoPromise_PN), nameof(ProtoPromise_PP) })]
+        //public void SetupProtoPromisesIteration_P()
+        //{
+        //    ProtoPromise_Progress.AwaitPending.Setup(N);
+        //}
+
+        //[IterationCleanup(Targets = new[] { nameof(ProtoPromise_PN), nameof(ProtoPromise_PP) })]
+        //public void CleanupProtoPromisesIteration_P()
+        //{
+        //    ProtoPromise_Progress.AwaitPending.Cleanup();
+        //}
+
+        //[Benchmark(Description = "ProtoPromise")]
+        //[BenchmarkCategory("Progress_NoPool")]
+        //public void ProtoPromise_PN()
+        //{
+        //    ProtoPromise_Progress.AwaitPending.ExecuteWithoutPool();
+        //}
+
+        //[Benchmark(Description = "ProtoPromise")]
+        //[BenchmarkCategory("Progress_Pool")]
+        //public void ProtoPromise_PP()
+        //{
+        //    ProtoPromise_Progress.AwaitPending.ExecuteWithPool();
+        //}
+    }
+
+    partial class AwaitResolved
+    {
+        // No progress
+
+        [GlobalSetup(Targets = new[] { nameof(ProtoPromise_NN), nameof(ProtoPromise_NP) })]
+        public void SetupProtoPromisesIteration_N()
+        {
+            ProtoPromise_NoProgress.AwaitResolved.Setup(N);
+        }
+
+        [GlobalCleanup(Targets = new[] { nameof(ProtoPromise_NN), nameof(ProtoPromise_NP) })]
+        public void CleanupProtoPromisesIteration_N()
+        {
+            ProtoPromise_NoProgress.AwaitResolved.Cleanup();
+        }
+
+        [Benchmark(Description = "ProtoPromise")]
+        [BenchmarkCategory("No Pool")]
+        public void ProtoPromise_NN()
+        {
+            ProtoPromise_NoProgress.AwaitResolved.ExecuteWithoutPool();
+        }
+
+        [Benchmark(Description = "ProtoPromise")]
+        [BenchmarkCategory("Pool")]
+        public void ProtoPromise_NP()
+        {
+            ProtoPromise_NoProgress.AwaitResolved.ExecuteWithPool();
+        }
+
+        // With progress
+        // Removed until compile errors are fixed: https://github.com/dotnet/msbuild/issues/4943, https://developercommunity2.visualstudio.com/t/vs-2019-can-only-use-one-reference-with-the-same-a/1247638
+
+        //[GlobalSetup(Targets = new[] { nameof(ProtoPromise_PN), nameof(ProtoPromise_PP) })]
+        //public void SetupProtoPromisesIteration_P()
+        //{
+        //    ProtoPromise_Progress.AwaitResolved.Setup(N);
+        //}
+
+        //[GlobalCleanup(Targets = new[] { nameof(ProtoPromise_PN), nameof(ProtoPromise_PP) })]
+        //public void CleanupProtoPromisesIteration_P()
+        //{
+        //    ProtoPromise_Progress.AwaitResolved.Cleanup();
+        //}
+
+        //[Benchmark(Description = "ProtoPromise")]
+        //[BenchmarkCategory("Progress_NoPool")]
+        //public void ProtoPromise_PN()
+        //{
+        //    ProtoPromise_Progress.AwaitResolved.ExecuteWithoutPool();
+        //}
+
+        //[Benchmark(Description = "ProtoPromise")]
+        //[BenchmarkCategory("Progress_Pool")]
+        //public void ProtoPromise_PP()
+        //{
+        //    ProtoPromise_Progress.AwaitResolved.ExecuteWithPool();
+        //}
+    }
+
+    partial class AsyncPending
+    {
+        [GlobalSetup(Targets = new[] { nameof(ProtoPromise_NN), nameof(ProtoPromise_NP) })]
+        public void SetupProtoPromises_N()
+        {
+            ProtoPromise_NoProgress.AsyncPending.Setup(N);
+        }
+
+        [GlobalCleanup(Targets = new[] { nameof(ProtoPromise_NN), nameof(ProtoPromise_NP) })]
+        public void CleanupProtoPromises_N()
+        {
+            ProtoPromise_NoProgress.AsyncPending.Cleanup();
+        }
+
+        // No progress
+
+        [Benchmark(Description = "ProtoPromise")]
+        [BenchmarkCategory("No Pool")]
+        public void ProtoPromise_NN()
+        {
+            ProtoPromise_NoProgress.AsyncPending.ExecuteWithoutPool();
+        }
+
+        [Benchmark(Description = "ProtoPromise")]
+        [BenchmarkCategory("Pool")]
+        public void ProtoPromise_NP()
+        {
+            ProtoPromise_NoProgress.AsyncPending.ExecuteWithPool();
+        }
+
+        // With progress
+        // Removed until compile errors are fixed: https://github.com/dotnet/msbuild/issues/4943, https://developercommunity2.visualstudio.com/t/vs-2019-can-only-use-one-reference-with-the-same-a/1247638
+
+        //[GlobalSetup(Targets = new[] { nameof(ProtoPromise_PN), nameof(ProtoPromise_PP) })]
+        //public void SetupProtoPromises_P()
+        //{
+        //    ProtoPromise_Progress.AsyncPending.Setup(N);
+        //}
+
+        //[GlobalCleanup(Targets = new[] { nameof(ProtoPromise_PN), nameof(ProtoPromise_PP) })]
+        //public void CleanupProtoPromises_P()
+        //{
+        //    ProtoPromise_Progress.AsyncPending.Cleanup();
+        //}
+
+        //[Benchmark(Description = "ProtoPromise")]
+        //[BenchmarkCategory("Progress_NoPool")]
+        //public void ProtoPromise_PN()
+        //{
+        //    ProtoPromise_Progress.AsyncPending.ExecuteWithoutPool();
+        //}
+
+        //[Benchmark(Description = "ProtoPromise")]
+        //[BenchmarkCategory("Progress_Pool")]
+        //public void ProtoPromise_PP()
+        //{
+        //    ProtoPromise_Progress.AsyncPending.ExecuteWithPool();
+        //}
+    }
+
+    partial class AsyncResolved
+    {
+        [GlobalSetup(Targets = new[] { nameof(ProtoPromise_NN), nameof(ProtoPromise_NP) })]
+        public void SetupProtoPromises_N()
+        {
+            ProtoPromise_NoProgress.AsyncResolved.Setup(N);
+        }
+
+        [GlobalCleanup(Targets = new[] { nameof(ProtoPromise_NN), nameof(ProtoPromise_NP) })]
+        public void CleanupProtoPromises_N()
+        {
+            ProtoPromise_NoProgress.AsyncResolved.Cleanup();
+        }
+
+        // No progress
+
+        [Benchmark(Description = "ProtoPromise")]
+        [BenchmarkCategory("No Pool")]
+        public void ProtoPromise_NN()
+        {
+            ProtoPromise_NoProgress.AsyncResolved.ExecuteWithoutPool();
+        }
+
+        [Benchmark(Description = "ProtoPromise")]
+        [BenchmarkCategory("Pool")]
+        public void ProtoPromise_NP()
+        {
+            ProtoPromise_NoProgress.AsyncResolved.ExecuteWithPool();
+        }
+
+        // With progress
+        // Removed until compile errors are fixed: https://github.com/dotnet/msbuild/issues/4943, https://developercommunity2.visualstudio.com/t/vs-2019-can-only-use-one-reference-with-the-same-a/1247638
+
+        //[GlobalSetup(Targets = new[] { nameof(ProtoPromise_PN), nameof(ProtoPromise_PP) })]
+        //public void SetupProtoPromises_P()
+        //{
+        //    ProtoPromise_Progress.AsyncResolved.Setup(N);
+        //}
+
+        //[GlobalCleanup(Targets = new[] { nameof(ProtoPromise_PN), nameof(ProtoPromise_PP) })]
+        //public void CleanupProtoPromises_P()
+        //{
+        //    ProtoPromise_Progress.AsyncResolved.Cleanup();
+        //}
+
+        //[Benchmark(Description = "ProtoPromise")]
+        //[BenchmarkCategory("Progress_NoPool")]
+        //public void ProtoPromise_PN()
+        //{
+        //    ProtoPromise_Progress.AsyncResolved.ExecuteWithoutPool();
+        //}
+
+        //[Benchmark(Description = "ProtoPromise")]
+        //[BenchmarkCategory("Progress_Pool")]
+        //public void ProtoPromise_PP()
+        //{
+        //    ProtoPromise_Progress.AsyncResolved.ExecuteWithPool();
+        //}
     }
 }

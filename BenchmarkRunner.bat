@@ -1,2 +1,2 @@
-AsynchronousBenchmarks\bin\Release\net472\AsynchronousBenchmarks.exe
+dotnet run -c Release -f net472 --project .\AsynchronousBenchmarks\AsynchronousBenchmarks.csproj --filter *
 PAUSE

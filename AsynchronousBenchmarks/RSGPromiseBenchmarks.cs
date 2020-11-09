@@ -1,4 +1,5 @@
 ﻿using BenchmarkDotNet.Attributes;
+using Helper;
 using RSG;
 using System;
 
@@ -19,8 +20,8 @@ namespace AsynchronousBenchmarks
             rsgVector = rsgVectorSource;
             rsgObject = rsgObjectSource;
             rsgVoidSource.Resolve();
-            rsgVectorSource.Resolve(Program.vector);
-            rsgObjectSource.Resolve(Program.obj);
+            rsgVectorSource.Resolve(Instances.vector);
+            rsgObjectSource.Resolve(Instances.obj);
         }
 
         public static void ClearRSGPromises()
@@ -28,6 +29,46 @@ namespace AsynchronousBenchmarks
             rsgVoid = default;
             rsgVector = default;
             rsgObject = default;
+        }
+
+        public static Promise[] rsgVoids;
+        public static Promise<Vector4>[] rsgVectors;
+        public static Promise<object>[] rsgObjects;
+
+        public static void SetDeferreds(int N)
+        {
+            if (rsgVoids != null)
+            {
+                // Don't recreate deferreds. This is necessary because this is ran separately for the JIT optimizer.
+                return;
+            }
+
+            rsgVoids = new Promise[N];
+            rsgVectors = new Promise<Vector4>[N];
+            rsgObjects = new Promise<object>[N];
+            for (int i = 0; i < N; ++i)
+            {
+                rsgVoids[i] = new Promise();
+                rsgVectors[i] = new Promise<Vector4>();
+                rsgObjects[i] = new Promise<object>();
+            }
+        }
+
+        public static void ClearDeferreds()
+        {
+            rsgVoids = default;
+            rsgVectors = default;
+            rsgObjects = default;
+        }
+
+        public static void ResolveDeferreds()
+        {
+            for (int i = 0, max = rsgVoids.Length; i < max; ++i)
+            {
+                rsgVoids[i].Resolve();
+                rsgVectors[i].Resolve(Instances.vector);
+                rsgObjects[i].Resolve(Instances.obj);
+            }
         }
     }
 
@@ -54,7 +95,43 @@ namespace AsynchronousBenchmarks
         }
     }
 
-    partial class ContinuationBenchmarks
+    partial class ContinueWithPending
+    {
+        [IterationSetup(Target = nameof(RSGPromise))]
+        public void SetupRSGPromises()
+        {
+            RSGPromiseHelper.SetDeferreds(N);
+        }
+
+        [IterationCleanup(Target = nameof(RSGPromise))]
+        public void CleanupRSGPromises()
+        {
+            RSGPromiseHelper.ClearDeferreds();
+        }
+
+        [Benchmark]
+        public void RSGPromise()
+        {
+            var deferred = new Promise<object>();
+            IPromise<object> promise = deferred;
+
+            for (int i = 0; i < N; ++i)
+            {
+                int index = i;
+                promise = promise
+                    // Native methods.
+                    .ContinueWith(() => (IPromise) RSGPromiseHelper.rsgVoids[index])
+                    .ContinueWith(() => (IPromise<Vector4>) RSGPromiseHelper.rsgVectors[index])
+                    .ContinueWith(() => (IPromise<object>) RSGPromiseHelper.rsgObjects[index]);
+            }
+
+            promise.Done();
+            deferred.Resolve(Instances.obj);
+            RSGPromiseHelper.ResolveDeferreds();
+        }
+    }
+
+    partial class ContinueWithResolved
     {
         [GlobalSetup(Target = nameof(RSGPromise))]
         public void SetupRSGPromises()
@@ -77,10 +154,6 @@ namespace AsynchronousBenchmarks
             for (int i = 0; i < N; ++i)
             {
                 promise = promise
-                    // Extension methods created here.
-                    .ContinueWith(() => { })
-                    .ContinueWith(() => Program.vector)
-                    .ContinueWith(() => Program.obj)
                     // Native methods.
                     .ContinueWith(() => RSGPromiseHelper.rsgVoid)
                     .ContinueWith(() => RSGPromiseHelper.rsgVector)
@@ -88,12 +161,67 @@ namespace AsynchronousBenchmarks
             }
 
             promise.Done();
-            deferred.Resolve(Program.obj);
+            deferred.Resolve(Instances.obj);
         }
     }
 
-    // RSG does not support async/await, so we won't run benchmarks for those.
-    partial class AwaitBenchmarks { }
+    partial class ContinueWithFromValue
+    {
+        [Benchmark]
+        public void RSGPromise()
+        {
+            var deferred = new Promise<object>();
+            IPromise<object> promise = deferred;
 
-    partial class AsyncBenchmarks { }
+            for (int i = 0; i < N; ++i)
+            {
+                promise = promise
+                    // Extension methods created here.
+                    .ContinueWith(() => { })
+                    .ContinueWith(() => Instances.vector)
+                    .ContinueWith(() => Instances.obj);
+            }
+
+            promise.Done();
+            deferred.Resolve(Instances.obj);
+        }
+    }
+
+    // RSG does not support async/await, just throw so it will still be included in the summary table.
+
+    partial class AwaitPending
+    {
+        [Benchmark]
+        public void RSGPromise()
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    partial class AwaitResolved
+    {
+        [Benchmark]
+        public void RSGPromise()
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    partial class AsyncPending
+    {
+        [Benchmark]
+        public void RSGPromise()
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    partial class AsyncResolved
+    {
+        [Benchmark]
+        public void RSGPromise()
+        {
+            throw new NotImplementedException();
+        }
+    }
 }
