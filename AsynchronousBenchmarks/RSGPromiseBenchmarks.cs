@@ -24,13 +24,6 @@ namespace AsynchronousBenchmarks
             rsgObjectSource.Resolve(Instances.obj);
         }
 
-        public static void ClearRSGPromises()
-        {
-            rsgVoid = default;
-            rsgVector = default;
-            rsgObject = default;
-        }
-
         public static Promise[] rsgVoids;
         public static Promise<Vector4>[] rsgVectors;
         public static Promise<object>[] rsgObjects;
@@ -39,7 +32,7 @@ namespace AsynchronousBenchmarks
         {
             if (rsgVoids != null)
             {
-                // Don't recreate deferreds. This is necessary because this is ran separately for the JIT optimizer.
+                // Don't recreate deferreds.
                 return;
             }
 
@@ -97,14 +90,23 @@ namespace AsynchronousBenchmarks
 
     partial class ContinueWithPending
     {
+        [GlobalSetup(Target = nameof(RSGPromise))]
+        public void GlobalSetupRSGPromises()
+        {
+            // Run once to allow JIT to allocate (necessary for CORE runtimes) so survived memory is only measuring the actual objects, not the code.
+            RSGPromiseHelper.SetDeferreds(1);
+            ExecuteRSGPromise(1);
+            RSGPromiseHelper.ClearDeferreds();
+        }
+
         [IterationSetup(Target = nameof(RSGPromise))]
-        public void SetupRSGPromises()
+        public void IterationSetupRSGPromises()
         {
             RSGPromiseHelper.SetDeferreds(N);
         }
 
         [IterationCleanup(Target = nameof(RSGPromise))]
-        public void CleanupRSGPromises()
+        public void IterationCleanupRSGPromises()
         {
             RSGPromiseHelper.ClearDeferreds();
         }
@@ -112,10 +114,15 @@ namespace AsynchronousBenchmarks
         [Benchmark]
         public void RSGPromise()
         {
+            ExecuteRSGPromise(N);
+        }
+
+        private void ExecuteRSGPromise(int n)
+        {
             var deferred = new Promise<object>();
             IPromise<object> promise = deferred;
 
-            for (int i = 0; i < N; ++i)
+            for (int i = 0; i < n; ++i)
             {
                 int index = i;
                 promise = promise
@@ -134,24 +141,25 @@ namespace AsynchronousBenchmarks
     partial class ContinueWithResolved
     {
         [GlobalSetup(Target = nameof(RSGPromise))]
-        public void SetupRSGPromises()
+        public void GlobalSetupRSGPromises()
         {
             RSGPromiseHelper.SetRSGPromises();
-        }
-
-        [GlobalCleanup(Target = nameof(RSGPromise))]
-        public void CleanupRSGPromises()
-        {
-            RSGPromiseHelper.ClearRSGPromises();
+            // Run once to allow JIT to allocate (necessary for CORE runtimes) so survived memory is only measuring the actual objects, not the code.
+            ExecuteRSGPromise(1);
         }
 
         [Benchmark]
         public void RSGPromise()
         {
+            ExecuteRSGPromise(N);
+        }
+
+        private void ExecuteRSGPromise(int n)
+        {
             var deferred = new Promise<object>();
             IPromise<object> promise = deferred;
 
-            for (int i = 0; i < N; ++i)
+            for (int i = 0; i < n; ++i)
             {
                 promise = promise
                     // Native methods.
@@ -167,13 +175,26 @@ namespace AsynchronousBenchmarks
 
     partial class ContinueWithFromValue
     {
+        [GlobalSetup(Target = nameof(RSGPromise))]
+        public void GlobalSetupRSGPromises()
+        {
+            RSGPromiseHelper.SetRSGPromises();
+            // Run once to allow JIT to allocate (necessary for CORE runtimes) so survived memory is only measuring the actual objects, not the code.
+            ExecuteRSGPromise(1);
+        }
+
         [Benchmark]
         public void RSGPromise()
+        {
+            ExecuteRSGPromise(N);
+        }
+
+        private void ExecuteRSGPromise(int n)
         {
             var deferred = new Promise<object>();
             IPromise<object> promise = deferred;
 
-            for (int i = 0; i < N; ++i)
+            for (int i = 0; i < n; ++i)
             {
                 promise = promise
                     // Extension methods created here.

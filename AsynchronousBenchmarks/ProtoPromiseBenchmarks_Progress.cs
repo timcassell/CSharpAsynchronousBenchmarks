@@ -1,6 +1,8 @@
 ﻿//
 //
-// Removed until compile errors are fixed: https://github.com/dotnet/msbuild/issues/4943, https://developercommunity2.visualstudio.com/t/vs-2019-can-only-use-one-reference-with-the-same-a/1247638
+// Removed until compile errors are fixed:
+// https://github.com/dotnet/msbuild/issues/4943
+// https://developercommunity2.visualstudio.com/t/vs-2019-can-only-use-one-reference-with-the-same-a/1247638
 //
 //
 
@@ -35,16 +37,6 @@
 //            protoObjectSource.Resolve(Instances.obj);
 //        }
 
-//        public static void ClearProtoPromises()
-//        {
-//            protoVoid.Release();
-//            protoVoid = default;
-//            protoVector.Release();
-//            protoVector = default;
-//            protoObject.Release();
-//            protoObject = default;
-//        }
-
 //        public static Promise.Deferred[] protoVoids;
 //        public static Promise<Vector4>.Deferred[] protoVectors;
 //        public static Promise<object>.Deferred[] protoObjects;
@@ -53,7 +45,7 @@
 //        {
 //            if (protoVoids != null)
 //            {
-//                // Don't recreate deferreds. This is necessary because this is ran separately for the JIT optimizer.
+//                // Don't recreate deferreds.
 //                return;
 //            }
 
@@ -91,32 +83,37 @@
 
 //    public static class ContinueWithPending
 //    {
-//        private static int N;
-
-//        public static void Setup(int N)
+//        public static void GlobalSetup()
 //        {
-//            ContinueWithPending.N = N;
+//            // Run once to allow JIT to allocate (necessary for CORE runtimes) so survived memory is only measuring the actual objects, not the code.
+//            IterationSetup(1);
+//            ExecuteWithoutPool(1);
+//            IterationCleanup();
+//        }
+
+//        public static void IterationSetup(int N)
+//        {
 //            ProtoPromiseHelper.SetDeferreds(N);
 //        }
 
-//        public static void Cleanup()
+//        public static void IterationCleanup()
 //        {
 //            ProtoPromiseHelper.ClearDeferreds();
 //        }
 
-//        public static void ExecuteWithoutPool()
+//        public static void ExecuteWithoutPool(int N)
 //        {
 //            Promise.Config.ObjectPooling = Promise.PoolType.None;
-//            Execute();
+//            Execute(N);
 //        }
 
-//        public static void ExecuteWithPool()
+//        public static void ExecuteWithPool(int N)
 //        {
 //            Promise.Config.ObjectPooling = Promise.PoolType.All;
-//            Execute();
+//            Execute(N);
 //        }
 
-//        private static void Execute()
+//        private static void Execute(int N)
 //        {
 //            Promise<object>.Deferred deferred = Promise.NewDeferred<object>();
 //            var promise = deferred.Promise;
@@ -137,32 +134,26 @@
 
 //    public static class ContinueWithResolved
 //    {
-//        private static int N;
-
-//        public static void Setup(int N)
+//        public static void GlobalSetup()
 //        {
-//            ContinueWithResolved.N = N;
 //            ProtoPromiseHelper.SetProtoPromises();
+//            // Run once to allow JIT to allocate (necessary for CORE runtimes) so survived memory is only measuring the actual objects, not the code.
+//            ExecuteWithoutPool(1);
 //        }
 
-//        public static void Cleanup()
-//        {
-//            ProtoPromiseHelper.ClearProtoPromises();
-//        }
-
-//        public static void ExecuteWithoutPool()
+//        public static void ExecuteWithoutPool(int N)
 //        {
 //            Promise.Config.ObjectPooling = Promise.PoolType.None;
-//            Execute();
+//            Execute(N);
 //        }
 
-//        public static void ExecuteWithPool()
+//        public static void ExecuteWithPool(int N)
 //        {
 //            Promise.Config.ObjectPooling = Promise.PoolType.All;
-//            Execute();
+//            Execute(N);
 //        }
 
-//        private static void Execute()
+//        private static void Execute(int N)
 //        {
 //            Promise<object>.Deferred deferred = Promise.NewDeferred<object>();
 //            var promise = deferred.Promise;
@@ -182,30 +173,25 @@
 
 //    public static class ContinueWithFromValue
 //    {
-//        private static int N;
-
-//        public static void Setup(int N)
+//        public static void GlobalSetup()
 //        {
-//            ContinueWithFromValue.N = N;
+//            // Run once to allow JIT to allocate (necessary for CORE runtimes) so survived memory is only measuring the actual objects, not the code.
+//            ExecuteWithoutPool(1);
 //        }
 
-//        public static void Cleanup()
-//        {
-//        }
-
-//        public static void ExecuteWithoutPool()
+//        public static void ExecuteWithoutPool(int N)
 //        {
 //            Promise.Config.ObjectPooling = Promise.PoolType.None;
-//            Execute();
+//            Execute(N);
 //        }
 
-//        public static void ExecuteWithPool()
+//        public static void ExecuteWithPool(int N)
 //        {
 //            Promise.Config.ObjectPooling = Promise.PoolType.All;
-//            Execute();
+//            Execute(N);
 //        }
 
-//        private static void Execute()
+//        private static void Execute(int N)
 //        {
 //            Promise<object>.Deferred deferred = Promise.NewDeferred<object>();
 //            var promise = deferred.Promise;
@@ -225,36 +211,41 @@
 
 //    public static class AwaitPending
 //    {
-//        private static int N;
-
-//        public static void Setup(int N)
+//        public static void GlobalSetup()
 //        {
-//            AwaitPending.N = N;
+//            // Run once to allow JIT to allocate (necessary for CORE runtimes) so survived memory is only measuring the actual objects, not the code.
+//            ProtoPromiseHelper.SetDeferreds(1);
+//            ExecuteWithoutPool(1);
+//            ProtoPromiseHelper.ClearDeferreds();
+//        }
+
+//        public static void IterationSetup(int N)
+//        {
 //            ProtoPromiseHelper.SetDeferreds(N);
 //        }
 
-//        public static void Cleanup()
+//        public static void IterationCleanup()
 //        {
 //            ProtoPromiseHelper.ClearDeferreds();
 //        }
 
-//        public static void ExecuteWithoutPool()
+//        public static void ExecuteWithoutPool(int N)
 //        {
 //            Promise.Config.ObjectPooling = Promise.PoolType.None;
-//            var task = Execute();
+//            var task = Execute(N);
 //            ProtoPromiseHelper.ResolveDeferreds();
 //            task.Wait();
 //        }
 
-//        public static void ExecuteWithPool()
+//        public static void ExecuteWithPool(int N)
 //        {
 //            Promise.Config.ObjectPooling = Promise.PoolType.All;
-//            var task = Execute();
+//            var task = Execute(N);
 //            ProtoPromiseHelper.ResolveDeferreds();
 //            task.Wait();
 //        }
 
-//        private static async Task<object> Execute()
+//        private static async Task<object> Execute(int N)
 //        {
 //            for (int i = 0; i < N; ++i)
 //            {
@@ -268,34 +259,28 @@
 
 //    public static class AwaitResolved
 //    {
-//        private static int N;
-
-//        public static void Setup(int N)
+//        public static void GlobalSetup()
 //        {
-//            AwaitResolved.N = N;
 //            ProtoPromiseHelper.SetProtoPromises();
+//            // Run once to allow JIT to allocate (necessary for CORE runtimes) so survived memory is only measuring the actual objects, not the code.
+//            ExecuteWithoutPool(1);
 //        }
 
-//        public static void Cleanup()
-//        {
-//            ProtoPromiseHelper.ClearProtoPromises();
-//        }
-
-//        public static void ExecuteWithoutPool()
+//        public static void ExecuteWithoutPool(int N)
 //        {
 //            Promise.Config.ObjectPooling = Promise.PoolType.None;
-//            _ = Execute();
+//            _ = Execute(N);
 //            Promise.Manager.HandleCompletesAndProgress();
 //        }
 
-//        public static void ExecuteWithPool()
+//        public static void ExecuteWithPool(int N)
 //        {
 //            Promise.Config.ObjectPooling = Promise.PoolType.All;
-//            _ = Execute();
+//            _ = Execute(N);
 //            Promise.Manager.HandleCompletesAndProgress();
 //        }
 
-//        private static async Task<object> Execute()
+//        private static async Task<object> Execute(int N)
 //        {
 //            for (int i = 0; i < N; ++i)
 //            {
@@ -309,40 +294,39 @@
 
 //    public static class AsyncPending
 //    {
-//        private static int N;
-
-//        public static void Setup(int N)
-//        {
-//            AsyncPending.N = N;
-//        }
-
-//        public static void Cleanup()
-//        {
-
-//        }
-
-//        public static void ExecuteWithoutPool()
-//        {
-//            Promise.Config.ObjectPooling = Promise.PoolType.None;
-//            Execute();
-//        }
-
-//        public static void ExecuteWithPool()
-//        {
-//            Promise.Config.ObjectPooling = Promise.PoolType.All;
-//            Execute();
-//        }
-
+//        private static Promise.Deferred deferred;
 //        private static Promise promise;
 //        private static long counter;
 
-//        private static void Execute()
+//        public static void GlobalSetup()
+//        {
+//            // Run once to allow JIT to allocate (necessary for CORE runtimes) so survived memory is only measuring the actual objects, not the code.
+//            IterationSetup();
+//            ExecuteWithoutPool(1);
+//        }
+
+//        public static void IterationSetup()
 //        {
 //            // Create a promise to await so that the async functions won't complete synchronously.
-//            Promise.Deferred deferred = Promise.NewDeferred();
+//            deferred = Promise.NewDeferred();
 //            promise = deferred.Promise;
 //            counter = 0L;
+//        }
 
+//        public static void ExecuteWithoutPool(int N)
+//        {
+//            Promise.Config.ObjectPooling = Promise.PoolType.None;
+//            Execute(N);
+//        }
+
+//        public static void ExecuteWithPool(int N)
+//        {
+//            Promise.Config.ObjectPooling = Promise.PoolType.All;
+//            Execute(N);
+//        }
+
+//        private static void Execute(int N)
+//        {
 //            for (int i = 0; i < N; ++i)
 //            {
 //                _ = PromiseVoid();
@@ -381,31 +365,25 @@
 
 //    public static class AsyncResolved
 //    {
-//        private static int N;
-
-//        public static void Setup(int N)
+//        public static void GlobalSetup()
 //        {
-//            AsyncResolved.N = N;
+//            // Run once to allow JIT to allocate (necessary for CORE runtimes) so survived memory is only measuring the actual objects, not the code.
+//            ExecuteWithoutPool(1);
 //        }
 
-//        public static void Cleanup()
-//        {
-
-//        }
-
-//        public static void ExecuteWithoutPool()
+//        public static void ExecuteWithoutPool(int N)
 //        {
 //            Promise.Config.ObjectPooling = Promise.PoolType.None;
-//            Execute();
+//            Execute(N);
 //        }
 
-//        public static void ExecuteWithPool()
+//        public static void ExecuteWithPool(int N)
 //        {
 //            Promise.Config.ObjectPooling = Promise.PoolType.All;
-//            Execute();
+//            Execute(N);
 //        }
 
-//        private static void Execute()
+//        private static void Execute(int N)
 //        {
 //            for (int i = 0; i < N; ++i)
 //            {
