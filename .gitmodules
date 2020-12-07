@@ -1,0 +1,3 @@
+[submodule "BenchmarkDotNet"]
+	path = BenchmarkDotNet
+	url = C:\\Users\\Tim\\Documents\\git\\CSharpAsynchronousBenchmarks\\BenchmarkDotNet
