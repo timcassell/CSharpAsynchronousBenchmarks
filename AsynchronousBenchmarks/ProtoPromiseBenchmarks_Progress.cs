@@ -113,17 +113,19 @@
 //            Execute(N);
 //        }
 
+//        private static int index;
 //        private static void Execute(int N)
 //        {
+//            index = -1;
 //            Promise<object>.Deferred deferred = Promise.NewDeferred<object>();
 //            var promise = deferred.Promise;
 
 //            for (int i = 0; i < N; ++i)
 //            {
 //                promise = promise
-//                    .ContinueWith(i, (index, _) => ProtoPromiseHelper.protoVoids[index].Promise)
-//                    .ContinueWith(i, (index, _) => ProtoPromiseHelper.protoVectors[index].Promise)
-//                    .ContinueWith(i, (index, _) => ProtoPromiseHelper.protoObjects[index].Promise);
+//                    .ContinueWith(_ => ProtoPromiseHelper.protoVoids[++index].Promise)
+//                    .ContinueWith(_ => ProtoPromiseHelper.protoVectors[index].Promise)
+//                    .ContinueWith(_ => ProtoPromiseHelper.protoObjects[index].Promise);
 //            }
 
 //            deferred.Resolve(Instances.obj);

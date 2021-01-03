@@ -495,65 +495,76 @@ Benchmarks with issues:
 This is testing this setup:
 
 ```
-for (int i = 0; i < N; ++i)
+private static int task_index;
+private void Execute()
 {
-    int index = i;
-    task = task
-        .ContinueWith(_ => pendingTaskVoids[index]).Unwrap()
-        .ContinueWith(_ => pendingTaskVectors[index]).Unwrap()
-        .ContinueWith(_ => pendingTaskObjects[index]).Unwrap();
+    task_index = -1;
+    TaskCompletionSource<object> source = new TaskCompletionSource<object>();
+    var task = source.Task;
+
+    for (int i = 0; i < N; ++i)
+    {
+        task = task
+            .ContinueWith(_ => pendingTaskVoids[++task_index]).Unwrap()
+            .ContinueWith(_ => pendingTaskVectors[task_index]).Unwrap()
+            .ContinueWith(_ => pendingTaskObjects[task_index]).Unwrap();
+    }
+
+    source.SetResult(Instances.obj);
+    ResolveCompletionSources();
+    task.Wait();
 }
 ```
 
 
 |       Method |       Runtime | Categories |     N |         Mean | Ratio |  Allocated |  Survived |
 |------------- |-------------- |----------- |------ |-------------:|------:|-----------:|----------:|
-| ProtoPromise |      .NET 4.8 |    No Pool |   100 |     379.4 μs |  1.02 |    32768 B |         - |
-| ProtoPromise |      .NET 4.8 |       Pool |   100 |     211.8 μs |  0.57 |          - |   19344 B |
-|   RSGPromise |      .NET 4.8 |            |   100 |     633.0 μs |  1.69 |   794712 B |         - |
-|   DotNetTask |      .NET 4.8 |            |   100 |     373.8 μs |  1.00 |    90112 B |         - |
-|      UniTask |      .NET 4.8 |            |   100 |     201.8 μs |  0.54 |    32768 B |   86472 B |
+| ProtoPromise |      .NET 4.8 |    No Pool |   100 |     377.8 μs |  1.03 |    32768 B |         - |
+| ProtoPromise |      .NET 4.8 |       Pool |   100 |     211.6 μs |  0.58 |          - |   16944 B |
+|   RSGPromise |      .NET 4.8 |            |   100 |     466.6 μs |  1.27 |   775344 B |         - |
+|   DotNetTask |      .NET 4.8 |            |   100 |     365.3 μs |  1.00 |    65536 B |         - |
+|      UniTask |      .NET 4.8 |            |   100 |     193.2 μs |  0.54 |          - |   86472 B |
 |              |               |            |       |              |       |            |           |
-| ProtoPromise | .NET Core 3.1 |    No Pool |   100 |     463.1 μs |  1.74 |    28096 B |     296 B |
-| ProtoPromise | .NET Core 3.1 |       Pool |   100 |     360.8 μs |  1.36 |          - |   19776 B |
-|   RSGPromise | .NET Core 3.1 |            |   100 |     870.0 μs |  3.27 |   764848 B |     320 B |
-|   DotNetTask | .NET Core 3.1 |            |   100 |     266.0 μs |  1.00 |    81696 B |      32 B |
-|      UniTask | .NET Core 3.1 |            |   100 |     296.0 μs |  1.11 |    28904 B |   87496 B |
+| ProtoPromise | .NET Core 3.1 |    No Pool |   100 |     445.3 μs |  1.67 |    25696 B |     296 B |
+| ProtoPromise | .NET Core 3.1 |       Pool |   100 |     361.6 μs |  1.35 |          - |   17376 B |
+|   RSGPromise | .NET Core 3.1 |            |   100 |     857.2 μs |  3.22 |   743248 B |     320 B |
+|   DotNetTask | .NET Core 3.1 |            |   100 |     265.9 μs |  1.00 |    60096 B |      32 B |
+|      UniTask | .NET Core 3.1 |            |   100 |     288.9 μs |  1.09 |          - |   87472 B |
 |              |               |            |       |              |       |            |           |
-| ProtoPromise |    CoreRt 3.1 |    No Pool |   100 |     186.1 μs |  0.88 |    28096 B |         - |
-| ProtoPromise |    CoreRt 3.1 |       Pool |   100 |     183.4 μs |  0.87 |          - |   19344 B |
-|   RSGPromise |    CoreRt 3.1 |            |   100 |     467.1 μs |  2.21 |   692784 B |         - |
-|   DotNetTask |    CoreRt 3.1 |            |   100 |     211.1 μs |  1.00 |    76896 B |         - |
+| ProtoPromise |    CoreRt 3.1 |    No Pool |   100 |     195.4 μs |  0.94 |    25696 B |         - |
+| ProtoPromise |    CoreRt 3.1 |       Pool |   100 |     191.5 μs |  0.93 |          - |   16944 B |
+|   RSGPromise |    CoreRt 3.1 |            |   100 |     426.2 μs |  2.07 |   675984 B |         - |
+|   DotNetTask |    CoreRt 3.1 |            |   100 |     206.8 μs |  1.00 |    60096 B |         - |
 |      UniTask |    CoreRt 3.1 |            |   100 |           NA |     ? |          - |         - |
 |              |               |            |       |              |       |            |           |
-| ProtoPromise |          Mono |    No Pool |   100 |     215.0 μs |  0.66 |          - |         - |
-| ProtoPromise |          Mono |       Pool |   100 |     201.2 μs |  0.63 |          - |         - |
-|   RSGPromise |          Mono |            |   100 |   1,093.0 μs |  3.35 |          - |         - |
-|   DotNetTask |          Mono |            |   100 |     327.3 μs |  1.00 |          - |         - |
+| ProtoPromise |          Mono |    No Pool |   100 |     199.2 μs |  0.60 |          - |         - |
+| ProtoPromise |          Mono |       Pool |   100 |     191.9 μs |  0.58 |          - |         - |
+|   RSGPromise |          Mono |            |   100 |   1,135.0 μs |  3.47 |          - |         - |
+|   DotNetTask |          Mono |            |   100 |     327.8 μs |  1.00 |          - |         - |
 |      UniTask |          Mono |            |   100 |           NA |     ? |          - |         - |
 |              |               |            |       |              |       |            |           |
-| ProtoPromise |      .NET 4.8 |    No Pool | 10000 |  39,850.8 μs |  0.76 |  2812648 B |         - |
-| ProtoPromise |      .NET 4.8 |       Pool | 10000 |  21,038.0 μs |  0.40 |          - | 1920144 B |
-|   RSGPromise |      .NET 4.8 |            | 10000 | 480,111.5 μs |  9.18 | 78958072 B |         - |
-|   DotNetTask |      .NET 4.8 |            | 10000 |  52,345.3 μs |  1.00 |  8671760 B |         - |
-|      UniTask |      .NET 4.8 |            | 10000 |  27,409.5 μs |  0.52 |  2891280 B | 8640072 B |
+| ProtoPromise |      .NET 4.8 |    No Pool | 10000 |  38,386.5 μs |  0.96 |  2575056 B |         - |
+| ProtoPromise |      .NET 4.8 |       Pool | 10000 |  20,817.6 μs |  0.52 |          - | 1680144 B |
+|   RSGPromise |      .NET 4.8 |            | 10000 | 491,422.1 μs | 12.24 | 76956680 B |         - |
+|   DotNetTask |      .NET 4.8 |            | 10000 |  40,127.6 μs |  1.00 |  6500632 B |         - |
+|      UniTask |      .NET 4.8 |            | 10000 |  21,982.7 μs |  0.55 |   728352 B | 8640072 B |
 |              |               |            |       |              |       |            |           |
-| ProtoPromise | .NET Core 3.1 |    No Pool | 10000 |  29,663.4 μs |  1.13 |  2800096 B |     320 B |
-| ProtoPromise | .NET Core 3.1 |       Pool | 10000 |  17,959.5 μs |  0.69 |          - | 1920576 B |
-|   RSGPromise | .NET Core 3.1 |            | 10000 | 460,456.7 μs | 17.49 | 76400872 B |    3648 B |
-|   DotNetTask | .NET Core 3.1 |            | 10000 |  26,334.3 μs |  1.00 |  8160096 B |      32 B |
-|      UniTask | .NET Core 3.1 |            | 10000 |  21,278.9 μs |  0.81 |  2880104 B | 8641112 B |
+| ProtoPromise | .NET Core 3.1 |    No Pool | 10000 |  29,273.2 μs |  1.26 |  2560096 B |     320 B |
+| ProtoPromise | .NET Core 3.1 |       Pool | 10000 |  18,181.5 μs |  0.80 |          - | 1680576 B |
+|   RSGPromise | .NET Core 3.1 |            | 10000 | 459,172.0 μs | 20.04 | 74240864 B |    3656 B |
+|   DotNetTask | .NET Core 3.1 |            | 10000 |  22,729.0 μs |  1.00 |  6000096 B |      32 B |
+|      UniTask | .NET Core 3.1 |            | 10000 |  19,780.6 μs |  0.87 |   720104 B | 8641112 B |
 |              |               |            |       |              |       |            |           |
-| ProtoPromise |    CoreRt 3.1 |    No Pool | 10000 |  18,910.0 μs |  0.70 |  2800096 B |         - |
-| ProtoPromise |    CoreRt 3.1 |       Pool | 10000 |  18,807.2 μs |  0.69 |          - | 1920144 B |
-|   RSGPromise |    CoreRt 3.1 |            | 10000 | 426,938.1 μs | 15.77 | 69200784 B |         - |
-|   DotNetTask |    CoreRt 3.1 |            | 10000 |  27,070.5 μs |  1.00 |  7680096 B |         - |
+| ProtoPromise |    CoreRt 3.1 |    No Pool | 10000 |  18,860.7 μs |  0.70 |  2560096 B |         - |
+| ProtoPromise |    CoreRt 3.1 |       Pool | 10000 |  19,473.6 μs |  0.73 |          - | 1680144 B |
+|   RSGPromise |    CoreRt 3.1 |            | 10000 | 483,852.5 μs | 18.06 | 67520816 B |         - |
+|   DotNetTask |    CoreRt 3.1 |            | 10000 |  26,790.6 μs |  1.00 |  6000096 B |         - |
 |      UniTask |    CoreRt 3.1 |            | 10000 |           NA |     ? |          - |         - |
 |              |               |            |       |              |       |            |           |
-| ProtoPromise |          Mono |    No Pool | 10000 |  22,933.2 μs |  0.34 |          - |         - |
-| ProtoPromise |          Mono |       Pool | 10000 |  19,458.2 μs |  0.29 |          - |         - |
-|   RSGPromise |          Mono |            | 10000 | 349,842.1 μs |  5.24 |          - |         - |
-|   DotNetTask |          Mono |            | 10000 |  66,890.8 μs |  1.00 |          - |         - |
+| ProtoPromise |          Mono |    No Pool | 10000 |  22,995.2 μs |  0.39 |          - |         - |
+| ProtoPromise |          Mono |       Pool | 10000 |  19,163.7 μs |  0.33 |          - |         - |
+|   RSGPromise |          Mono |            | 10000 | 377,116.6 μs |  6.41 |          - |         - |
+|   DotNetTask |          Mono |            | 10000 |  58,877.8 μs |  1.00 |          - |         - |
 |      UniTask |          Mono |            | 10000 |           NA |     ? |          - |         - |
 
 ```

@@ -101,18 +101,19 @@ namespace AsynchronousBenchmarks
             uniTask_additionalIterations = 0; // Only include additional iteration on the first run for the survived memory measurement.
         }
 
+        private static int uni_index;
         private void ExecuteUniTask(int n)
         {
+            uni_index = -1;
             UniTaskCompletionSource<object> deferred = new UniTaskCompletionSource<object>();
             var task = deferred.Task;
 
             for (int i = 0; i < n; ++i)
             {
-                int index = i;
                 task = task
-                    .ContinueWith(_ => UniTaskHelper.uniVoids[index].Task)
-                    .ContinueWith(() => UniTaskHelper.uniVectors[index].Task)
-                    .ContinueWith(_ => UniTaskHelper.uniObjects[index].Task);
+                    .ContinueWith(_ => UniTaskHelper.uniVoids[++uni_index].Task)
+                    .ContinueWith(() => UniTaskHelper.uniVectors[uni_index].Task)
+                    .ContinueWith(_ => UniTaskHelper.uniObjects[uni_index].Task);
             }
 
             task.Forget();

@@ -97,18 +97,19 @@ namespace AsynchronousBenchmarks
             ExecuteTask(N);
         }
 
+        private static int task_index;
         private void ExecuteTask(int n)
         {
+            task_index = -1;
             TaskCompletionSource<object> deferred = new TaskCompletionSource<object>();
             var task = deferred.Task;
 
             for (int i = 0; i < n; ++i)
             {
-                int index = i;
                 task = task
-                    .ContinueWith(_ => (Task) TaskHelper.taskVoids[index].Task, TaskContinuationOptions.ExecuteSynchronously).Unwrap()
-                    .ContinueWith(_ => TaskHelper.taskVectors[index].Task, TaskContinuationOptions.ExecuteSynchronously).Unwrap()
-                    .ContinueWith(_ => TaskHelper.taskObjects[index].Task, TaskContinuationOptions.ExecuteSynchronously).Unwrap();
+                    .ContinueWith(_ => (Task) TaskHelper.taskVoids[++task_index].Task, TaskContinuationOptions.ExecuteSynchronously).Unwrap()
+                    .ContinueWith(_ => TaskHelper.taskVectors[task_index].Task, TaskContinuationOptions.ExecuteSynchronously).Unwrap()
+                    .ContinueWith(_ => TaskHelper.taskObjects[task_index].Task, TaskContinuationOptions.ExecuteSynchronously).Unwrap();
             }
 
             deferred.SetResult(Instances.obj);

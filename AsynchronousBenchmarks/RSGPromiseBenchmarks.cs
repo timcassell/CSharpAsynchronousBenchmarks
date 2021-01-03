@@ -117,19 +117,20 @@ namespace AsynchronousBenchmarks
             ExecuteRSGPromise(N);
         }
 
+        private static int rsg_index;
         private void ExecuteRSGPromise(int n)
         {
+            rsg_index = -1;
             var deferred = new Promise<object>();
             IPromise<object> promise = deferred;
 
             for (int i = 0; i < n; ++i)
             {
-                int index = i;
                 promise = promise
                     // Native methods.
-                    .ContinueWith(() => (IPromise) RSGPromiseHelper.rsgVoids[index])
-                    .ContinueWith(() => (IPromise<Vector4>) RSGPromiseHelper.rsgVectors[index])
-                    .ContinueWith(() => (IPromise<object>) RSGPromiseHelper.rsgObjects[index]);
+                    .ContinueWith(() => (IPromise) RSGPromiseHelper.rsgVoids[++rsg_index])
+                    .ContinueWith(() => (IPromise<Vector4>) RSGPromiseHelper.rsgVectors[rsg_index])
+                    .ContinueWith(() => (IPromise<object>) RSGPromiseHelper.rsgObjects[rsg_index]);
             }
 
             promise.Done();
