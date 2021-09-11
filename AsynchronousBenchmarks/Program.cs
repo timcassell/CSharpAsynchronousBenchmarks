@@ -1,11 +1,5 @@
 ﻿using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
-
-[assembly: SimpleJob(BenchmarkDotNet.Engines.RunStrategy.Throughput, RuntimeMoniker.Net48)]
-[assembly: SimpleJob(BenchmarkDotNet.Engines.RunStrategy.Throughput, RuntimeMoniker.NetCoreApp31)]
-[assembly: SimpleJob(BenchmarkDotNet.Engines.RunStrategy.Throughput, RuntimeMoniker.CoreRt31)]
-[assembly: SimpleJob(BenchmarkDotNet.Engines.RunStrategy.Throughput, RuntimeMoniker.Mono)]
 
 namespace AsynchronousBenchmarks
 {
@@ -21,52 +15,27 @@ namespace AsynchronousBenchmarks
         }
     }
 
-    [CategoriesColumn]
-    public partial class ContinueWithPending
+    public abstract class AsyncBenchmark
     {
-        [Params(100, 10_000)]
-        public int N;
+        [Params(true, false)]
+        public bool Pending;
     }
 
-    [CategoriesColumn]
-    public partial class ContinueWithResolved
+    [GroupBenchmarksBy(BenchmarkDotNet.Configs.BenchmarkLogicalGroupRule.ByCategory), BenchmarkCategory(nameof(AsyncAwait))]
+    public partial class AsyncAwait : AsyncBenchmark
     {
-        [Params(100, 10_000)]
-        public int N;
     }
 
-    [CategoriesColumn]
-    public partial class ContinueWithFromValue
+    [GroupBenchmarksBy(BenchmarkDotNet.Configs.BenchmarkLogicalGroupRule.ByCategory), BenchmarkCategory(nameof(ContinueWith))]
+    public partial class ContinueWith : AsyncBenchmark
     {
-        [Params(100, 10_000)]
-        public int N;
     }
+}
 
-    [CategoriesColumn]
-    public partial class AwaitPending
+namespace Helper
+{
+    public struct Struct32
     {
-        [Params(100, 10_000)]
-        public int N;
-    }
-
-    [CategoriesColumn]
-    public partial class AwaitResolved
-    {
-        [Params(100, 10_000)]
-        public int N;
-    }
-
-    [CategoriesColumn]
-    public partial class AsyncPending
-    {
-        [Params(100, 10_000)]
-        public int N;
-    }
-
-    [CategoriesColumn]
-    public partial class AsyncResolved
-    {
-        [Params(100, 10_000)]
-        public int N;
+        public long l1, l2, l3, l4;
     }
 }

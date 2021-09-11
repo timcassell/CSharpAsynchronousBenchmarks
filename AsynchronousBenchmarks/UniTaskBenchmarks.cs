@@ -1,406 +1,139 @@
 ﻿using BenchmarkDotNet.Attributes;
-using Cysharp.Threading.Tasks;
 using Helper;
-using Proto.Promises;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 
 namespace AsynchronousBenchmarks
 {
-    static class UniTaskHelper
+    public class UniTaskAsyncHelper
     {
-        public static UniTask uniVoid;
-        public static UniTask<Vector4> uniVector;
-        public static UniTask<object> uniObject;
+        public bool hasInvoked;
+        private readonly bool _isPending;
+        private readonly Stack<AutoResetUniTaskCompletionSource> _completionSources;
 
-        public static void SetUniTasks()
+        public UniTaskAsyncHelper(bool isPending)
         {
-            var uniVoidSource = new UniTaskCompletionSource();
-            var uniVectorSource = new UniTaskCompletionSource<Vector4>();
-            var uniObjectSource = new UniTaskCompletionSource<object>();
-            // UniTask documentation says completion source can be awaited multiple times, so no need to preserve.
-            uniVoid = uniVoidSource.Task;//.Preserve();
-            uniVector = uniVectorSource.Task;//.Preserve();
-            uniObject = uniObjectSource.Task;//.Preserve();
-            uniVoidSource.TrySetResult();
-            uniVectorSource.TrySetResult(Instances.vector);
-            uniObjectSource.TrySetResult(Instances.obj);
+            _isPending = isPending;
+            _completionSources = new Stack<AutoResetUniTaskCompletionSource>(2);
         }
 
-        public static UniTaskCompletionSource[] uniVoids;
-        public static UniTaskCompletionSource<Vector4>[] uniVectors;
-        public static UniTaskCompletionSource<object>[] uniObjects;
-
-        public static void SetCompletionSources(int n)
+        public void ResolvePending()
         {
-            if (uniVoids != null)
+            while (_completionSources.Count > 0)
             {
-                // Don't recreate completion sources.
-                return;
-            }
-
-            uniVoids = new UniTaskCompletionSource[n];
-            uniVectors = new UniTaskCompletionSource<Vector4>[n];
-            uniObjects = new UniTaskCompletionSource<object>[n];
-            for (int i = 0; i < n; ++i)
-            {
-                uniVoids[i] = new UniTaskCompletionSource();
-                uniVectors[i] = new UniTaskCompletionSource<Vector4>();
-                uniObjects[i] = new UniTaskCompletionSource<object>();
+                _completionSources.Pop().TrySetResult();
             }
         }
 
-        public static void ClearCompletionSources()
+        public UniTask GetBaseUniTask()
         {
-            uniVoids = default;
-            uniVectors = default;
-            uniObjects = default;
-        }
-
-        public static void ResolveCompletionSources()
-        {
-            for (int i = 0, max = uniVoids.Length; i < max; ++i)
+            if (!_isPending)
             {
-                uniVoids[i].TrySetResult();
-                uniVectors[i].TrySetResult(Instances.vector);
-                uniObjects[i].TrySetResult(Instances.obj);
+                return UniTask.CompletedTask;
             }
+            var completionSource = AutoResetUniTaskCompletionSource.Create();
+            _completionSources.Push(completionSource);
+            return completionSource.Task;
         }
     }
 
-    partial class ContinueWithPending
+    partial class AsyncAwait
     {
+        // static to match ContinueWith
+        private static UniTaskAsyncHelper _uniTaskHelper;
+
         [GlobalSetup(Target = nameof(UniTask))]
-        public void GlobalSetupUniTasks()
+        public void UniTaskSetup()
         {
-            // Run once to allow JIT to allocate (necessary for CORE runtimes) so survived memory is only measuring the actual objects, not the code.
-            UniTaskHelper.SetCompletionSources(1);
-            ExecuteUniTask(1);
-            UniTaskHelper.ClearCompletionSources();
+            _uniTaskHelper = new UniTaskAsyncHelper(Pending);
+            // Run once in setup to initialize static memory so it isn't counted in the survived memory measurement.
+            // UniTask doesn't have an API to clear its object pool, so we set hasInvoked instead.
+            _uniTaskHelper.hasInvoked = true;
+            UniTask();
+            _uniTaskHelper.hasInvoked = false;
         }
-
-        [IterationSetup(Target = nameof(UniTask))]
-        public void IterationSetupUniTasks()
-        {
-            UniTaskHelper.SetCompletionSources(N + uniTask_additionalIterations);
-        }
-
-        [IterationCleanup(Target = nameof(UniTask))]
-        public void IterationCleanupUniTasks()
-        {
-            UniTaskHelper.ClearCompletionSources();
-        }
-
-        // Can't clear UniTask's object pool, so just add an extra iteration to account for GlobalSetup (necessary for a fair survived memory measurement).
-        int uniTask_additionalIterations = 1;
 
         [Benchmark]
         public void UniTask()
         {
-            ExecuteUniTask(N + uniTask_additionalIterations);
-            uniTask_additionalIterations = 0; // Only include additional iteration on the first run for the survived memory measurement.
+            UniTask_ExecuteAsync().Forget();
+            if (!_uniTaskHelper.hasInvoked)
+            {
+                // Execute again the first time to measure survived memory.
+                // Subsequent runs only execute once to measure the execution time.
+                _uniTaskHelper.hasInvoked = true;
+                UniTask_ExecuteAsync().Forget();
+            }
+            _uniTaskHelper.ResolvePending();
         }
 
-        private static int uni_index;
-        private void ExecuteUniTask(int n)
+        private static async UniTask UniTask_ExecuteAsync()
         {
-            uni_index = -1;
-            UniTaskCompletionSource<object> deferred = new UniTaskCompletionSource<object>();
-            var task = deferred.Task;
+            await UniTask_GetAndConsumeValuesAsync<Struct32, object>();
+            await UniTask_GetAndConsumeValuesAsync<object, Struct32>();
+        }
 
-            for (int i = 0; i < n; ++i)
-            {
-                task = task
-                    .ContinueWith(_ => UniTaskHelper.uniVoids[++uni_index].Task)
-                    .ContinueWith(() => UniTaskHelper.uniVectors[uni_index].Task)
-                    .ContinueWith(_ => UniTaskHelper.uniObjects[uni_index].Task);
-            }
+        private static async UniTask UniTask_GetAndConsumeValuesAsync<T1, T2>()
+        {
+            _ = await UniTask_GetValueAsync<T1>();
+            _ = await UniTask_GetValueAsync<T2>();
+        }
 
-            task.Forget();
-            deferred.TrySetResult(Instances.obj);
-            UniTaskHelper.ResolveCompletionSources();
+        private static async UniTask<T> UniTask_GetValueAsync<T>()
+        {
+            await _uniTaskHelper.GetBaseUniTask();
+            return default;
         }
     }
 
-    partial class ContinueWithResolved
+    partial class ContinueWith
     {
-        [GlobalSetup(Target = nameof(UniTask))]
-        public void GlobalSetupUniTasks()
-        {
-            UniTaskHelper.SetUniTasks();
-            // Run once to allow JIT to allocate (necessary for CORE runtimes) so survived memory is only measuring the actual objects, not the code.
-            ExecuteUniTask(1);
-        }
+        // Static so .ContinueWith callbacks don't need to capture `this`, which we are not interested in measuring.
+        private static UniTaskAsyncHelper _uniTaskHelper;
 
-        // Can't clear UniTask's object pool, so just add an extra iteration to account for GlobalSetup (necessary for a fair survived memory measurement).
-        int additionalIterations = 1;
+        [GlobalSetup(Target = nameof(UniTask))]
+        public void UniTaskSetup()
+        {
+            _uniTaskHelper = new UniTaskAsyncHelper(Pending);
+            // Run once in setup to initialize static memory so it isn't counted in the survived memory measurement.
+            // UniTask doesn't have an API to clear its object pool, so we set hasInvoked instead.
+            _uniTaskHelper.hasInvoked = true;
+            UniTask();
+            _uniTaskHelper.hasInvoked = false;
+        }
 
         [Benchmark]
         public void UniTask()
         {
-            ExecuteUniTask(N + additionalIterations);
-            additionalIterations = 0; // Only include additional iteration on the first run for the survived memory measurement.
-        }
-
-        private void ExecuteUniTask(int n)
-        {
-            UniTaskCompletionSource<object> deferred = new UniTaskCompletionSource<object>();
-            var task = deferred.Task;
-
-            for (int i = 0; i < n; ++i)
+            UniTask_ExecuteAsync().Forget();
+            if (!_uniTaskHelper.hasInvoked)
             {
-                task = task
-                    .ContinueWith(_ => UniTaskHelper.uniVoid)
-                    .ContinueWith(() => UniTaskHelper.uniVector)
-                    .ContinueWith(_ => UniTaskHelper.uniObject);
+                // Execute again the first time to measure survived memory.
+                // Subsequent runs only execute once to measure the execution time.
+                _uniTaskHelper.hasInvoked = true;
+                UniTask_ExecuteAsync().Forget();
             }
-
-            task.Forget();
-            deferred.TrySetResult(Instances.obj);
-        }
-    }
-
-    partial class ContinueWithFromValue
-    {
-        [GlobalSetup(Target = nameof(UniTask))]
-        public void GlobalSetupUniTasks()
-        {
-            // Run once to allow JIT to allocate (necessary for CORE runtimes) so survived memory is only measuring the actual objects, not the code.
-            ExecuteUniTask(1);
+            _uniTaskHelper.ResolvePending();
         }
 
-        // Can't clear UniTask's object pool, so just add an extra iteration to account for GlobalSetup (necessary for a fair survived memory measurement).
-        int additionalIterations = 1;
-
-        [Benchmark]
-        public void UniTask()
+        private static UniTask UniTask_ExecuteAsync()
         {
-            ExecuteUniTask(N + additionalIterations);
-            additionalIterations = 0; // Only include additional iteration on the first run for the survived memory measurement.
+            return UniTask_GetAndConsumeValuesAsync<Struct32, object>()
+                .ContinueWith(() => UniTask_GetAndConsumeValuesAsync<object, Struct32>())
+                .ContinueWith(() => { });
         }
 
-        private void ExecuteUniTask(int n)
+        private static UniTask UniTask_GetAndConsumeValuesAsync<T1, T2>()
         {
-            UniTaskCompletionSource<object> deferred = new UniTaskCompletionSource<object>();
-            var task = deferred.Task;
-
-            for (int i = 0; i < n; ++i)
-            {
-                task = task
-                    .ContinueWith(_ => { })
-                    .ContinueWith(() => Instances.vector)
-                    .ContinueWith(_ => Instances.obj);
-            }
-
-            task.Forget();
-            deferred.TrySetResult(Instances.obj);
-        }
-    }
-
-    partial class AwaitPending
-    {
-        [GlobalSetup(Target = nameof(UniTask))]
-        public void GlobalSetupUniTasks()
-        {
-            // Run once to allow JIT to allocate (necessary for CORE runtimes) so survived memory is only measuring the actual objects, not the code.
-            UniTaskHelper.SetCompletionSources(1);
-            ExecuteUniTask(1);
-            UniTaskHelper.ClearCompletionSources();
+            return UniTask_GetValueAsync<T1>()
+                .ContinueWith(_ => UniTask_GetValueAsync<T2>())
+                .ContinueWith(_ => { });
         }
 
-        [IterationSetup(Target = nameof(UniTask))]
-        public void IterationSetupUniTasks()
+        private static UniTask<T> UniTask_GetValueAsync<T>()
         {
-            UniTaskHelper.SetCompletionSources(N);
-        }
-
-        [IterationCleanup(Target = nameof(UniTask))]
-        public void IterationCleanupUniTasks()
-        {
-            UniTaskHelper.ClearCompletionSources();
-        }
-
-        // Can't clear UniTask's object pool, so just add an extra iteration to account for GlobalSetup (necessary for a fair survived memory measurement).
-        int additionalIterations = 1;
-
-        [Benchmark]
-        public void UniTask()
-        {
-            ExecuteUniTask(N + additionalIterations);
-            additionalIterations = 0; // Only include additional iteration on the first run for the survived memory measurement.
-        }
-
-        private void ExecuteUniTask(int n)
-        {
-            _ = AwaitUniTasks(n);
-            UniTaskHelper.ResolveCompletionSources();
-        }
-
-        private async Task<object> AwaitUniTasks(int n)
-        {
-            for (int i = 0; i < n; ++i)
-            {
-                await UniTaskHelper.uniVoid;
-                _ = await UniTaskHelper.uniVector;
-                _ = await UniTaskHelper.uniObject;
-            }
-            return Instances.obj;
-        }
-    }
-
-    partial class AwaitResolved
-    {
-        [GlobalSetup(Target = nameof(UniTask))]
-        public void GlobalSetupUniTasks()
-        {
-            UniTaskHelper.SetUniTasks();
-            // Run once to allow JIT to allocate (necessary for CORE runtimes) so survived memory is only measuring the actual objects, not the code.
-            ExecuteUniTask(1);
-        }
-
-        // Can't clear UniTask's object pool, so just add an extra iteration to account for GlobalSetup (necessary for a fair survived memory measurement).
-        int additionalIterations = 1;
-
-        [Benchmark]
-        public void UniTask()
-        {
-            ExecuteUniTask(N + additionalIterations);
-            additionalIterations = 0; // Only include additional iteration on the first run for the survived memory measurement.
-        }
-
-        private void ExecuteUniTask(int n)
-        {
-            _ = AwaitUniTasks(n);
-        }
-
-        private async Task<object> AwaitUniTasks(int n)
-        {
-            for (int i = 0; i < n; ++i)
-            {
-                await UniTaskHelper.uniVoid;
-                _ = await UniTaskHelper.uniVector;
-                _ = await UniTaskHelper.uniObject;
-            }
-            return Instances.obj;
-        }
-    }
-
-    partial class AsyncPending
-    {
-        private static Promise.Deferred uni_deferred;
-        private static Promise uni_promise;
-        private static long uni_counter;
-
-        [GlobalSetup(Target = nameof(UniTask))]
-        public void GlobalSetupUniTasks()
-        {
-            // Run once to allow JIT to allocate (necessary for CORE runtimes) so survived memory is only measuring the actual objects, not the code.
-            IterationSetupUniTasks();
-            ExecuteUniTask(1);
-        }
-
-        [IterationSetup(Target = nameof(UniTask))]
-        public void IterationSetupUniTasks()
-        {
-            // Create a promise to await so that the async functions won't complete synchronously.
-            uni_deferred = Promise.NewDeferred();
-            uni_promise = uni_deferred.Promise;
-            uni_counter = 0L;
-        }
-
-        // Can't clear UniTask's object pool, so just add an extra iteration to account for GlobalSetup (necessary for a fair survived memory measurement).
-        int additionalIterations = 0;
-
-        [Benchmark]
-        public void UniTask()
-        {
-            ExecuteUniTask(N + additionalIterations);
-            additionalIterations = 0; // Only include additional iteration on the first run for the survived memory measurement.
-        }
-
-        private void ExecuteUniTask(int n)
-        {
-            for (int i = 0; i < n; ++i)
-            {
-                // Forget so that the objects will repool.
-                UniTaskVoid().Forget();
-                UniTaskVector().Forget();
-                UniTaskObject().Forget();
-            }
-
-            async UniTask UniTaskVoid()
-            {
-                Interlocked.Increment(ref uni_counter);
-                await uni_promise;
-                Interlocked.Decrement(ref uni_counter);
-            }
-
-            async UniTask<Vector4> UniTaskVector()
-            {
-                Interlocked.Increment(ref uni_counter);
-                await uni_promise;
-                Interlocked.Decrement(ref uni_counter);
-                return Instances.vector;
-            }
-
-            async UniTask<object> UniTaskObject()
-            {
-                Interlocked.Increment(ref uni_counter);
-                await uni_promise;
-                Interlocked.Decrement(ref uni_counter);
-                return Instances.obj;
-            }
-
-            uni_deferred.Resolve();
-            Promise.Manager.HandleCompletesAndProgress();
-            while (Interlocked.Read(ref uni_counter) > 0) { }
-        }
-    }
-
-    partial class AsyncResolved
-    {
-        [GlobalSetup(Target = nameof(UniTask))]
-        public void GlobalSetupUniTasks()
-        {
-            // Run once to allow JIT to allocate (necessary for CORE runtimes) so survived memory is only measuring the actual objects, not the code.
-            ExecuteUniTask(1);
-        }
-
-        // Can't clear UniTask's object pool, so just add an extra iteration to account for GlobalSetup (necessary for a fair survived memory measurement).
-        int additionalIterations = 1;
-
-        [Benchmark]
-        public void UniTask()
-        {
-            ExecuteUniTask(N + additionalIterations);
-            additionalIterations = 0; // Only include additional iteration on the first run for the survived memory measurement.
-        }
-
-        private void ExecuteUniTask(int n)
-        {
-            for (int i = 0; i < n; ++i)
-            {
-                // Forget so that the objects will repool.
-                TaskVoid().Forget();
-                TaskVector().Forget();
-                TaskObject().Forget();
-            }
-
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-            async UniTask TaskVoid()
-            {
-            }
-
-            async UniTask<Vector4> TaskVector()
-            {
-                return Instances.vector;
-            }
-
-            async UniTask<object> TaskObject()
-            {
-                return Instances.obj;
-            }
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+            return _uniTaskHelper.GetBaseUniTask()
+                .ContinueWith(() => default(T));
         }
     }
 }
