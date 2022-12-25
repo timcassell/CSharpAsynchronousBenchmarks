@@ -1,94 +1,41 @@
 ﻿using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Configs;
-using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
-
-[assembly: SimpleJob(BenchmarkDotNet.Engines.RunStrategy.Throughput, RuntimeMoniker.Net48)]
-[assembly: SimpleJob(BenchmarkDotNet.Engines.RunStrategy.Throughput, RuntimeMoniker.Mono)]
-[assembly: SimpleJob(BenchmarkDotNet.Engines.RunStrategy.Throughput, RuntimeMoniker.NetCoreApp31)]
-[assembly: SimpleJob(BenchmarkDotNet.Engines.RunStrategy.Throughput, RuntimeMoniker.CoreRt31)]
 
 namespace AsynchronousBenchmarks
 {
     public class Program
     {
         /// <summary>
-        /// to run specific benchmarks you must pass `--filter $glob`. Examples:
-        ///     * --filter '*' // runs all
-        ///     * --filter 'ContinuationBenchmarks' // runs only ContinuationBenchmarks
-        /// to run against specific runtimes you need to pass their target framework monikers using --runtimes. Examples:
-        ///     * --runtimes net472 mono netcoreapp31 corert31
-        /// to disable "Progress" modify the .csproj file and set it to false
-        /// Sample full command:
-        ///     * dotnet run -c Release -f net472 --filter * --runtimes net472 mono netcoreapp31 corert31
-        /// For more info please refer to https://benchmarkdotnet.org/articles/configs/toolchains.html#multiple-frameworks-support
+        /// Console args are provided from BenchmarkRunner.bat.
+        /// See https://benchmarkdotnet.org/articles/guides/console-args.html
         /// </summary>
         public static void Main(string[] args)
         {
-            var job =
-                Job.Default
-                // tell BDN that this job should be extended by arguments passed from command line
-                .AsDefault();
-
-            var config = DefaultConfig.Instance.AddJob(job);
-
-            BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args, config);
+            BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
         }
     }
 
-    [CategoriesColumn]
-    [MemoryDiagnoser]
-    public partial class ContinueWithPending
+    public abstract class AsyncBenchmark
     {
-        [Params(100, 10_000)]
-        public int N;
+        [Params(true, false)]
+        public bool Pending;
     }
 
-    [CategoriesColumn]
-    [MemoryDiagnoser]
-    public partial class ContinueWithResolved
+    [GroupBenchmarksBy(BenchmarkDotNet.Configs.BenchmarkLogicalGroupRule.ByCategory), BenchmarkCategory(nameof(AsyncAwait))]
+    public partial class AsyncAwait : AsyncBenchmark
     {
-        [Params(100, 10_000)]
-        public int N;
     }
 
-    [CategoriesColumn]
-    [MemoryDiagnoser]
-    public partial class ContinueWithFromValue
+    [GroupBenchmarksBy(BenchmarkDotNet.Configs.BenchmarkLogicalGroupRule.ByCategory), BenchmarkCategory(nameof(ContinueWith))]
+    public partial class ContinueWith : AsyncBenchmark
     {
-        [Params(100, 10_000)]
-        public int N;
     }
+}
 
-    [CategoriesColumn]
-    [MemoryDiagnoser]
-    public partial class AwaitPending
+namespace Helper
+{
+    public struct Struct32
     {
-        [Params(100, 10_000)]
-        public int N;
-    }
-
-    [CategoriesColumn]
-    [MemoryDiagnoser]
-    public partial class AwaitResolved
-    {
-        [Params(100, 10_000)]
-        public int N;
-    }
-
-    [CategoriesColumn]
-    [MemoryDiagnoser]
-    public partial class AsyncPending
-    {
-        [Params(100, 10_000)]
-        public int N;
-    }
-
-    [CategoriesColumn]
-    [MemoryDiagnoser]
-    public partial class AsyncResolved
-    {
-        [Params(100, 10_000)]
-        public int N;
+        public long l1, l2, l3, l4;
     }
 }

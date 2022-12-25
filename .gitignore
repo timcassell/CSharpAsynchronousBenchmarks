@@ -178,4 +178,4 @@ paket-files/
 /.vs/
  
 # Benchmark artifacts
-/BenchmarkDotNet.Artifacts/
+*/BenchmarkDotNet.Artifacts/

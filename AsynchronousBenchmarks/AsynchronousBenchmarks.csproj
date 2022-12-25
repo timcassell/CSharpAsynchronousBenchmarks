@@ -2,31 +2,23 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>netcoreapp3.1;net472</TargetFrameworks>
+    <TargetFrameworks>net6.0;net472</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BenchmarkDotNet" Version="0.12.1" />
-    <PackageReference Include="UniTask" Version="2.0.36" />
+    <!--<PackageReference Include="BenchmarkDotNet" Version="0.13.2" />-->
+    <PackageReference Include="ProtoPromise" Version="2.4.0" />
+    <PackageReference Include="UniTask" Version="2.3.3" />
+    <PackageReference Include="UnityFx.Async" Version="1.1.0" />
+  </ItemGroup>
+
+  <!--We reference the BenchmarkDotNet from the submodule instead of from nuget, so we can utilize the changes we added to measure survived memory.-->
+  <ItemGroup>
+    <ProjectReference Include="..\BenchmarkDotNet\src\BenchmarkDotNet.Annotations\BenchmarkDotNet.Annotations.csproj" />
+    <ProjectReference Include="..\BenchmarkDotNet\src\BenchmarkDotNet\BenchmarkDotNet.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="ProtoPromise">
-      <HintPath>..\BuiltDLLs\ProtoPromise_NoProgress\ProtoPromise.dll</HintPath>
-    </Reference>
-    <!--
-      Removed until compile errors are fixed:
-      https://github.com/dotnet/msbuild/issues/4943
-      https://developercommunity2.visualstudio.com/t/vs-2019-can-only-use-one-reference-with-the-same-a/1247638
-    -->
-    <!--<Reference Include="ProtoPromise">
-      <HintPath>..\BuiltDLLs\ProtoPromise_NP.dll</HintPath>
-      <Aliases>ProtoPromise_Without_Progress</Aliases>
-    </Reference>
-    <Reference Include="ProtoPromise, Configuration=Release With Progress">
-      <HintPath>..\BuiltDLLs\ProtoPromise_P.dll</HintPath>
-      <Aliases>ProtoPromise_With_Progress</Aliases>
-    </Reference>-->
     <Reference Include="RSG.Promise">
       <HintPath>..\BuiltDLLs\RSG.Promise.dll</HintPath>
     </Reference>

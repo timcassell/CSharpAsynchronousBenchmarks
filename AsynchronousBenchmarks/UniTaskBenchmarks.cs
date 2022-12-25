@@ -1,313 +1,139 @@
 ﻿using BenchmarkDotNet.Attributes;
-using Cysharp.Threading.Tasks;
 using Helper;
-using Proto.Promises;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 
 namespace AsynchronousBenchmarks
 {
-    static class UniTaskHelper
+    public class UniTaskAsyncHelper
     {
-        public static UniTask uniVoid;
-        public static UniTask<Vector4> uniVector;
-        public static UniTask<object> uniObject;
+        public bool hasInvoked;
+        private readonly bool _isPending;
+        private readonly Stack<AutoResetUniTaskCompletionSource> _completionSources;
 
-        public static void SetUniTasks()
+        public UniTaskAsyncHelper(bool isPending)
         {
-            var uniVoidSource = new UniTaskCompletionSource();
-            var uniVectorSource = new UniTaskCompletionSource<Vector4>();
-            var uniObjectSource = new UniTaskCompletionSource<object>();
-            // UniTask documentation says completion source can be awaited multiple times, so no need to preserve.
-            uniVoid = uniVoidSource.Task;//.Preserve();
-            uniVector = uniVectorSource.Task;//.Preserve();
-            uniObject = uniObjectSource.Task;//.Preserve();
-            uniVoidSource.TrySetResult();
-            uniVectorSource.TrySetResult(Instances.vector);
-            uniObjectSource.TrySetResult(Instances.obj);
+            _isPending = isPending;
+            _completionSources = new Stack<AutoResetUniTaskCompletionSource>(2);
         }
 
-        public static void ClearUniTasks()
+        public void ResolvePending()
         {
-            uniVoid = default;
-            uniVector = default;
-            uniObject = default;
-        }
-
-        public static UniTaskCompletionSource[] uniVoids;
-        public static UniTaskCompletionSource<Vector4>[] uniVectors;
-        public static UniTaskCompletionSource<object>[] uniObjects;
-
-        public static void SetContinuationSources(int N)
-        {
-            if (uniVoids != null)
+            while (_completionSources.Count > 0)
             {
-                // Don't recreate completion sources. This is necessary because this is ran separately for the JIT optimizer.
-                return;
-            }
-
-            uniVoids = new UniTaskCompletionSource[N];
-            uniVectors = new UniTaskCompletionSource<Vector4>[N];
-            uniObjects = new UniTaskCompletionSource<object>[N];
-            for (int i = 0; i < N; ++i)
-            {
-                uniVoids[i] = new UniTaskCompletionSource();
-                uniVectors[i] = new UniTaskCompletionSource<Vector4>();
-                uniObjects[i] = new UniTaskCompletionSource<object>();
+                _completionSources.Pop().TrySetResult();
             }
         }
 
-        public static void ClearContinuationSources()
+        public UniTask GetBaseUniTask()
         {
-            uniVoids = default;
-            uniVectors = default;
-            uniObjects = default;
-        }
-
-        public static void ResolveCompletionSources()
-        {
-            for (int i = 0, max = uniVoids.Length; i < max; ++i)
+            if (!_isPending)
             {
-                uniVoids[i].TrySetResult();
-                uniVectors[i].TrySetResult(Instances.vector);
-                uniObjects[i].TrySetResult(Instances.obj);
+                return UniTask.CompletedTask;
             }
+            var completionSource = AutoResetUniTaskCompletionSource.Create();
+            _completionSources.Push(completionSource);
+            return completionSource.Task;
         }
     }
 
-    partial class ContinueWithPending
+    partial class AsyncAwait
     {
-        [IterationSetup(Target = nameof(UniTask))]
-        public void SetupUniTasks()
-        {
-            UniTaskHelper.SetContinuationSources(N);
-        }
+        // static to match ContinueWith
+        private static UniTaskAsyncHelper _uniTaskHelper;
 
-        [IterationCleanup(Target = nameof(UniTask))]
-        public void CleanupUniTasks()
-        {
-            UniTaskHelper.ClearContinuationSources();
-        }
-
-        [Benchmark]
-        public void UniTask()
-        {
-            UniTaskCompletionSource<object> deferred = new UniTaskCompletionSource<object>();
-            var promise = deferred.Task;
-
-            for (int i = 0; i < N; ++i)
-            {
-                int index = i;
-                promise = promise
-                    .ContinueWith(_ => UniTaskHelper.uniVoids[index].Task)
-                    .ContinueWith(() => UniTaskHelper.uniVectors[index].Task)
-                    .ContinueWith(_ => UniTaskHelper.uniObjects[index].Task);
-            }
-
-            promise.Forget();
-            deferred.TrySetResult(Instances.obj);
-            UniTaskHelper.ResolveCompletionSources();
-        }
-    }
-
-    partial class ContinueWithResolved
-    {
         [GlobalSetup(Target = nameof(UniTask))]
-        public void SetupUniTasks()
+        public void UniTaskSetup()
         {
-            UniTaskHelper.SetUniTasks();
-        }
-
-        [GlobalCleanup(Target = nameof(UniTask))]
-        public void CleanupUniTasks()
-        {
-            UniTaskHelper.ClearUniTasks();
-        }
-
-        [Benchmark]
-        public void UniTask()
-        {
-            UniTaskCompletionSource<object> deferred = new UniTaskCompletionSource<object>();
-            var promise = deferred.Task;
-
-            for (int i = 0; i < N; ++i)
-            {
-                promise = promise
-                    .ContinueWith(_ => UniTaskHelper.uniVoid)
-                    .ContinueWith(() => UniTaskHelper.uniVector)
-                    .ContinueWith(_ => UniTaskHelper.uniObject);
-            }
-
-            promise.Forget();
-            deferred.TrySetResult(Instances.obj);
-        }
-    }
-
-    partial class ContinueWithFromValue
-    {
-        [Benchmark]
-        public void UniTask()
-        {
-            UniTaskCompletionSource<object> deferred = new UniTaskCompletionSource<object>();
-            var promise = deferred.Task;
-
-            for (int i = 0; i < N; ++i)
-            {
-                promise = promise
-                    .ContinueWith(_ => { })
-                    .ContinueWith(() => Instances.vector)
-                    .ContinueWith(_ => Instances.obj);
-            }
-
-            promise.Forget();
-            deferred.TrySetResult(Instances.obj);
-        }
-    }
-
-    partial class AwaitPending
-    {
-        [IterationSetup(Target = nameof(UniTask))]
-        public void SetupUniTasks()
-        {
-            UniTaskHelper.SetContinuationSources(N);
-        }
-
-        [IterationCleanup(Target = nameof(UniTask))]
-        public void CleanupUniTasks()
-        {
-            UniTaskHelper.ClearContinuationSources();
+            _uniTaskHelper = new UniTaskAsyncHelper(Pending);
+            // Run once in setup to initialize static memory so it isn't counted in the survived memory measurement.
+            // UniTask doesn't have an API to clear its object pool, so we set hasInvoked instead.
+            _uniTaskHelper.hasInvoked = true;
+            UniTask();
+            _uniTaskHelper.hasInvoked = false;
         }
 
         [Benchmark]
         public void UniTask()
         {
-            _ = AwaitUniTasks();
-            UniTaskHelper.ResolveCompletionSources();
+            UniTask_ExecuteAsync().Forget();
+            if (!_uniTaskHelper.hasInvoked)
+            {
+                // Execute again the first time to measure survived memory.
+                // Subsequent runs only execute once to measure the execution time.
+                _uniTaskHelper.hasInvoked = true;
+                UniTask_ExecuteAsync().Forget();
+            }
+            _uniTaskHelper.ResolvePending();
         }
 
-        private async Task<object> AwaitUniTasks()
+        private static async UniTask UniTask_ExecuteAsync()
         {
-            for (int i = 0; i < N; ++i)
-            {
-                await UniTaskHelper.uniVoid;
-                _ = await UniTaskHelper.uniVector;
-                _ = await UniTaskHelper.uniObject;
-            }
-            return Instances.obj;
+            await UniTask_GetAndConsumeValuesAsync<Struct32, object>();
+            await UniTask_GetAndConsumeValuesAsync<object, Struct32>();
+        }
+
+        private static async UniTask UniTask_GetAndConsumeValuesAsync<T1, T2>()
+        {
+            _ = await UniTask_GetValueAsync<T1>();
+            _ = await UniTask_GetValueAsync<T2>();
+        }
+
+        private static async UniTask<T> UniTask_GetValueAsync<T>()
+        {
+            await _uniTaskHelper.GetBaseUniTask();
+            return default;
         }
     }
 
-    partial class AwaitResolved
+    partial class ContinueWith
     {
+        // Static so .ContinueWith callbacks don't need to capture `this`, which we are not interested in measuring.
+        private static UniTaskAsyncHelper _uniTaskHelper;
+
         [GlobalSetup(Target = nameof(UniTask))]
-        public void SetupUniTasks()
+        public void UniTaskSetup()
         {
-            UniTaskHelper.SetUniTasks();
-        }
-
-        [GlobalCleanup(Target = nameof(UniTask))]
-        public void CleanupUniTasks()
-        {
-            UniTaskHelper.ClearUniTasks();
+            _uniTaskHelper = new UniTaskAsyncHelper(Pending);
+            // Run once in setup to initialize static memory so it isn't counted in the survived memory measurement.
+            // UniTask doesn't have an API to clear its object pool, so we set hasInvoked instead.
+            _uniTaskHelper.hasInvoked = true;
+            UniTask();
+            _uniTaskHelper.hasInvoked = false;
         }
 
         [Benchmark]
         public void UniTask()
         {
-            _ = AwaitUniTasks();
+            UniTask_ExecuteAsync().Forget();
+            if (!_uniTaskHelper.hasInvoked)
+            {
+                // Execute again the first time to measure survived memory.
+                // Subsequent runs only execute once to measure the execution time.
+                _uniTaskHelper.hasInvoked = true;
+                UniTask_ExecuteAsync().Forget();
+            }
+            _uniTaskHelper.ResolvePending();
         }
 
-        private async Task<object> AwaitUniTasks()
+        private static UniTask UniTask_ExecuteAsync()
         {
-            for (int i = 0; i < N; ++i)
-            {
-                await UniTaskHelper.uniVoid;
-                _ = await UniTaskHelper.uniVector;
-                _ = await UniTaskHelper.uniObject;
-            }
-            return Instances.obj;
+            return UniTask_GetAndConsumeValuesAsync<Struct32, object>()
+                .ContinueWith(() => UniTask_GetAndConsumeValuesAsync<object, Struct32>())
+                .ContinueWith(() => { });
         }
-    }
 
-    partial class AsyncPending
-    {
-        private static Promise uni_promise;
-        private static long uni_counter;
-
-        [Benchmark]
-        public void UniTask()
+        private static UniTask UniTask_GetAndConsumeValuesAsync<T1, T2>()
         {
-            Promise.Config.ObjectPooling = Promise.PoolType.All;
-            // Create a promise to await so that the async functions won't complete synchronously.
-            Promise.Deferred deferred = Promise.NewDeferred();
-            uni_promise = deferred.Promise;
-            uni_counter = 0L;
-
-            for (int i = 0; i < N; ++i)
-            {
-                // Forget so that the objects will repool.
-                UniTaskVoid().Forget();
-                UniTaskVector().Forget();
-                UniTaskObject().Forget();
-            }
-
-            async UniTask UniTaskVoid()
-            {
-                Interlocked.Increment(ref uni_counter);
-                await uni_promise;
-                Interlocked.Decrement(ref uni_counter);
-            }
-
-            async UniTask<Vector4> UniTaskVector()
-            {
-                Interlocked.Increment(ref uni_counter);
-                await uni_promise;
-                Interlocked.Decrement(ref uni_counter);
-                return Instances.vector;
-            }
-
-            async UniTask<object> UniTaskObject()
-            {
-                Interlocked.Increment(ref uni_counter);
-                await uni_promise;
-                Interlocked.Decrement(ref uni_counter);
-                return Instances.obj;
-            }
-
-            deferred.Resolve();
-            Promise.Manager.HandleCompletesAndProgress();
-            while (Interlocked.Read(ref uni_counter) > 0) { }
+            return UniTask_GetValueAsync<T1>()
+                .ContinueWith(_ => UniTask_GetValueAsync<T2>())
+                .ContinueWith(_ => { });
         }
-    }
 
-    partial class AsyncResolved
-    {
-        [Benchmark]
-        public void UniTask()
+        private static UniTask<T> UniTask_GetValueAsync<T>()
         {
-            for (int i = 0; i < N; ++i)
-            {
-                // Forget so that the objects will repool.
-                TaskVoid().Forget();
-                TaskVector().Forget();
-                TaskObject().Forget();
-            }
-
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-            async UniTask TaskVoid()
-            {
-            }
-
-            async UniTask<Vector4> TaskVector()
-            {
-                return Instances.vector;
-            }
-
-            async UniTask<object> TaskObject()
-            {
-                return Instances.obj;
-            }
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+            return _uniTaskHelper.GetBaseUniTask()
+                .ContinueWith(() => default(T));
         }
     }
 }

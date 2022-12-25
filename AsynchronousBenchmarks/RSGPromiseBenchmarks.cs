@@ -1,227 +1,100 @@
 ﻿using BenchmarkDotNet.Attributes;
 using Helper;
 using RSG;
-using System;
+using System.Collections.Generic;
 
 namespace AsynchronousBenchmarks
 {
-    static class RSGPromiseHelper
+    public class RsgAsyncHelper
     {
-        public static IPromise rsgVoid;
-        public static IPromise<Vector4> rsgVector;
-        public static IPromise<object> rsgObject;
+        public bool hasInvoked;
+        private readonly bool _isPending;
+        private readonly Stack<Promise> _promises;
 
-        public static void SetRSGPromises()
+        public RsgAsyncHelper(bool isPending)
         {
-            var rsgVoidSource = new Promise();
-            var rsgVectorSource = new Promise<Vector4>();
-            var rsgObjectSource = new Promise<object>();
-            rsgVoid = rsgVoidSource;
-            rsgVector = rsgVectorSource;
-            rsgObject = rsgObjectSource;
-            rsgVoidSource.Resolve();
-            rsgVectorSource.Resolve(Instances.vector);
-            rsgObjectSource.Resolve(Instances.obj);
+            _isPending = isPending;
+            _promises = new Stack<Promise>(2);
         }
 
-        public static void ClearRSGPromises()
+        public void ResolvePending()
         {
-            rsgVoid = default;
-            rsgVector = default;
-            rsgObject = default;
-        }
-
-        public static Promise[] rsgVoids;
-        public static Promise<Vector4>[] rsgVectors;
-        public static Promise<object>[] rsgObjects;
-
-        public static void SetDeferreds(int N)
-        {
-            if (rsgVoids != null)
+            while (_promises.Count > 0)
             {
-                // Don't recreate deferreds. This is necessary because this is ran separately for the JIT optimizer.
-                return;
-            }
-
-            rsgVoids = new Promise[N];
-            rsgVectors = new Promise<Vector4>[N];
-            rsgObjects = new Promise<object>[N];
-            for (int i = 0; i < N; ++i)
-            {
-                rsgVoids[i] = new Promise();
-                rsgVectors[i] = new Promise<Vector4>();
-                rsgObjects[i] = new Promise<object>();
+                _promises.Pop().Resolve();
             }
         }
 
-        public static void ClearDeferreds()
+        public IPromise GetBasePromise()
         {
-            rsgVoids = default;
-            rsgVectors = default;
-            rsgObjects = default;
-        }
-
-        public static void ResolveDeferreds()
-        {
-            for (int i = 0, max = rsgVoids.Length; i < max; ++i)
+            if (!_isPending)
             {
-                rsgVoids[i].Resolve();
-                rsgVectors[i].Resolve(Instances.vector);
-                rsgObjects[i].Resolve(Instances.obj);
-            }
-        }
-    }
-
-    // RSG doesn't support all ContinueWiths, so create those extension methods here to match other benchmarks.
-    static class RSGPromiseExtensions
-    {
-        public static IPromise<T> ContinueWith<T>(this IPromise promise, Func<T> callback)
-        {
-            return promise.ContinueWith(() => Promise<T>.Resolved(callback()));
-        }
-
-        public static IPromise ContinueWith<T>(this IPromise<T> promise, Action callback)
-        {
-            return promise.ContinueWith(() =>
-            {
-                callback();
                 return Promise.Resolved();
-            });
-        }
-
-        public static IPromise<TConvert> ContinueWith<T, TConvert>(this IPromise<T> promise, Func<TConvert> callback)
-        {
-            return promise.ContinueWith(() => Promise<TConvert>.Resolved(callback()));
-        }
-    }
-
-    partial class ContinueWithPending
-    {
-        [IterationSetup(Target = nameof(RSGPromise))]
-        public void SetupRSGPromises()
-        {
-            RSGPromiseHelper.SetDeferreds(N);
-        }
-
-        [IterationCleanup(Target = nameof(RSGPromise))]
-        public void CleanupRSGPromises()
-        {
-            RSGPromiseHelper.ClearDeferreds();
-        }
-
-        [Benchmark]
-        public void RSGPromise()
-        {
-            var deferred = new Promise<object>();
-            IPromise<object> promise = deferred;
-
-            for (int i = 0; i < N; ++i)
-            {
-                int index = i;
-                promise = promise
-                    // Native methods.
-                    .ContinueWith(() => (IPromise) RSGPromiseHelper.rsgVoids[index])
-                    .ContinueWith(() => (IPromise<Vector4>) RSGPromiseHelper.rsgVectors[index])
-                    .ContinueWith(() => (IPromise<object>) RSGPromiseHelper.rsgObjects[index]);
             }
-
-            promise.Done();
-            deferred.Resolve(Instances.obj);
-            RSGPromiseHelper.ResolveDeferreds();
+            var promise = new Promise();
+            _promises.Push(promise);
+            return promise;
         }
     }
 
-    partial class ContinueWithResolved
+    partial class AsyncAwait
     {
-        [GlobalSetup(Target = nameof(RSGPromise))]
-        public void SetupRSGPromises()
+        [Benchmark]
+        public void RsgPromise()
         {
-            RSGPromiseHelper.SetRSGPromises();
+            // RSG promises don't support async/await, so we just throw NotImplementedException.
+            throw new System.NotImplementedException();
         }
+    }
 
-        [GlobalCleanup(Target = nameof(RSGPromise))]
-        public void CleanupRSGPromises()
+    partial class ContinueWith
+    {
+        // Static so .Then callbacks don't need to capture `this`, which we are not interested in measuring.
+        private static RsgAsyncHelper _rsgHelper;
+
+        [GlobalSetup(Target = nameof(RsgPromise))]
+        public void RsgPromiseSetup()
         {
-            RSGPromiseHelper.ClearRSGPromises();
+            _rsgHelper = new RsgAsyncHelper(Pending);
+            // Run once in setup to initialize static memory so it isn't counted in the survived memory measurement.
+            _rsgHelper.hasInvoked = true;
+            RsgPromise();
+            _rsgHelper.hasInvoked = false;
         }
 
         [Benchmark]
-        public void RSGPromise()
+        public void RsgPromise()
         {
-            var deferred = new Promise<object>();
-            IPromise<object> promise = deferred;
-
-            for (int i = 0; i < N; ++i)
+            Rsg_ExecuteAsync().Done();
+            if (!_rsgHelper.hasInvoked)
             {
-                promise = promise
-                    // Native methods.
-                    .ContinueWith(() => RSGPromiseHelper.rsgVoid)
-                    .ContinueWith(() => RSGPromiseHelper.rsgVector)
-                    .ContinueWith(() => RSGPromiseHelper.rsgObject);
+                // Execute again the first time to measure survived memory.
+                // Subsequent runs only execute once to measure the execution time.
+                _rsgHelper.hasInvoked = true;
+                Rsg_ExecuteAsync().Done();
             }
-
-            promise.Done();
-            deferred.Resolve(Instances.obj);
+            _rsgHelper.ResolvePending();
         }
-    }
 
-    partial class ContinueWithFromValue
-    {
-        [Benchmark]
-        public void RSGPromise()
+        private static IPromise Rsg_ExecuteAsync()
         {
-            var deferred = new Promise<object>();
-            IPromise<object> promise = deferred;
-
-            for (int i = 0; i < N; ++i)
-            {
-                promise = promise
-                    // Extension methods created here.
-                    .ContinueWith(() => { })
-                    .ContinueWith(() => Instances.vector)
-                    .ContinueWith(() => Instances.obj);
-            }
-
-            promise.Done();
-            deferred.Resolve(Instances.obj);
+            return Rsg_GetAndConsumeValuesAsync<Struct32, object>()
+                .Then(() => Rsg_GetAndConsumeValuesAsync<object, Struct32>())
+                .Then(() => { });
         }
-    }
 
-    // RSG does not support async/await, just throw so it will still be included in the summary table.
-
-    partial class AwaitPending
-    {
-        [Benchmark]
-        public void RSGPromise()
+        private static IPromise Rsg_GetAndConsumeValuesAsync<T1, T2>()
         {
-            throw new NotImplementedException();
+            return Rsg_GetValueAsync<T1>()
+                .Then(_ => Rsg_GetValueAsync<T2>())
+                .Then(_ => { });
         }
-    }
 
-    partial class AwaitResolved
-    {
-        [Benchmark]
-        public void RSGPromise()
+        private static IPromise<T> Rsg_GetValueAsync<T>()
         {
-            throw new NotImplementedException();
-        }
-    }
-
-    partial class AsyncPending
-    {
-        [Benchmark]
-        public void RSGPromise()
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    partial class AsyncResolved
-    {
-        [Benchmark]
-        public void RSGPromise()
-        {
-            throw new NotImplementedException();
+            // RSG promises don't support converting to another value directly without wrapping it in a promise.
+            return _rsgHelper.GetBasePromise()
+                .Then(() => Promise<T>.Resolved(default));
         }
     }
 }
