@@ -7,7 +7,7 @@ These benchmarks are ran using a fork of [BenchmarkDotNet](https://github.com/do
 This is a non-exhaustive benchmark of each library's features. It is only meant to compare the most common use scenario (awaiting an asynchronous result). Some libraries provide more/different features than others.
 
 Asynchronous libraries benchmarked:
-- Built-in callbacks (`System.Action`, `System.Func<T>`), measured as the baseline
+- Built-in callbacks (`System.Action`), measured as the baseline
 - [System.Threading.Tasks (TPL)](https://docs.microsoft.com/en-us/dotnet/standard/parallel-programming/task-parallel-library-tpl), `Task` and `ValueTask`
 - [ProtoPromise v2.4.0](https://github.com/timcassell/ProtoPromise)
 - [UniTask v2.3.3](https://github.com/Cysharp/UniTask)
