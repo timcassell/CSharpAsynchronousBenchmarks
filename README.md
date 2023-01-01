@@ -22,6 +22,8 @@ Note:
 Some functions are not actually supported in some libraries (like RSG does not support async/await), so they will show as `NA` or `?`.
 Callbacks are measured the same for each benchmark as a baseline to compare against, and does not mean you can actually use async/await or ContinueWith with them.
 
+`ContinueWith` is either using the `.ContinueWith` API or `.Then` API, depending on each library.
+
 Here are the results after running on my 2010 desktop:
 
 ```
