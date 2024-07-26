@@ -117,14 +117,14 @@ namespace AsynchronousBenchmarks
         private static Task Task_ExecuteAsync()
         {
             return Task_GetAndConsumeValuesAsync<Struct32, object>()
-                .ContinueWith(_ => Task_GetAndConsumeValuesAsync<object, Struct32>(), TaskContinuationOptions.ExecuteSynchronously)
+                .ContinueWith(_ => Task_GetAndConsumeValuesAsync<object, Struct32>(), TaskContinuationOptions.ExecuteSynchronously).Unwrap()
                 .ContinueWith(_ => { }, TaskContinuationOptions.ExecuteSynchronously);
         }
 
         private static Task Task_GetAndConsumeValuesAsync<T1, T2>()
         {
             return Task_GetValueAsync<T1>()
-                .ContinueWith(_ => Task_GetValueAsync<T2>(), TaskContinuationOptions.ExecuteSynchronously)
+                .ContinueWith(_ => Task_GetValueAsync<T2>(), TaskContinuationOptions.ExecuteSynchronously).Unwrap()
                 .ContinueWith(_ => { }, TaskContinuationOptions.ExecuteSynchronously);
         }
 
