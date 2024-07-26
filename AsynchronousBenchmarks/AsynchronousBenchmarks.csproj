@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <!--<PackageReference Include="BenchmarkDotNet" Version="0.13.12" />-->
-    <PackageReference Include="ProtoPromise" Version="3.0.0" />
+    <PackageReference Include="ProtoPromise" Version="3.1.0" />
     <PackageReference Include="UniTask" Version="2.5.3" />
     <PackageReference Include="UnityFx.Async" Version="1.1.0" />
   </ItemGroup>
