@@ -70,19 +70,19 @@ namespace AsynchronousBenchmarks
 
         private static async Promise Proto_ExecuteAsync()
         {
-            await Proto_GetAndConsumeValuesAsync<Struct32, object>();//.AwaitWithProgress(0.5f);
-            await Proto_GetAndConsumeValuesAsync<object, Struct32>();//.AwaitWithProgress(1f);
+            await Proto_GetAndConsumeValuesAsync<Struct32, object>();
+            await Proto_GetAndConsumeValuesAsync<object, Struct32>();
         }
 
         private static async Promise Proto_GetAndConsumeValuesAsync<T1, T2>()
         {
-            _ = await Proto_GetValueAsync<T1>();//.AwaitWithProgress(0.5f);
-            _ = await Proto_GetValueAsync<T2>();//.AwaitWithProgress(1f);
+            _ = await Proto_GetValueAsync<T1>();
+            _ = await Proto_GetValueAsync<T2>();
         }
 
         private static async Promise<T> Proto_GetValueAsync<T>()
         {
-            await _protoHelper.GetBasePromise();//.AwaitWithProgress(1f);
+            await _protoHelper.GetBasePromise();
             return default;
         }
     }
