@@ -24,46 +24,46 @@ Callbacks are measured the same for each benchmark as a baseline to compare agai
 
 `ContinueWith` is either using the `.ContinueWith` API or `.Then` API, depending on each library.
 
-## .Net 8.0 Benchmarks
+## .Net 10.0 Benchmarks
 
 ```
-BenchmarkDotNet v0.14.1-develop (2025-01-27), Windows 10 (10.0.19045.5371/22H2/2022Update)
+BenchmarkDotNet v0.16.0-nightly.20251220.380, Windows 10 (10.0.19045.6466/22H2/2022Update)
 AMD Ryzen 7 9800X3D 4.70GHz, 1 CPU, 16 logical and 8 physical cores
-.NET SDK 9.0.102
-  [Host]     : .NET 8.0.12 (8.0.1224.60305), X64 RyuJIT AVX-512F+CD+BW+DQ+VL+VBMI
-  DefaultJob : .NET 8.0.12 (8.0.1224.60305), X64 RyuJIT AVX-512F+CD+BW+DQ+VL+VBMI
+.NET SDK 10.0.100
+  [Host]     : .NET 10.0.0 (10.0.0, 10.0.25.52411), X64 RyuJIT x86-64-v4
+  DefaultJob : .NET 10.0.0 (10.0.0, 10.0.25.52411), X64 RyuJIT x86-64-v4
 ```
 
-| Type         | Method       | Pending | Mean      | Ratio | Allocated | Survived |
-|------------- |------------- |-------- |----------:|------:|----------:|---------:|
-| AsyncAwait   | Callback     | False   |  43.99 ns |  1.00 |     832 B |        - |
-| AsyncAwait   | ProtoPromise | False   |  37.56 ns |  0.85 |         - |        - |
-| AsyncAwait   | RsgPromise   | False   |        NA |     ? |        NA |       NA |
-| AsyncAwait   | Task         | False   |  49.97 ns |  1.14 |     192 B |        - |
-| AsyncAwait   | UniTask      | False   |  81.06 ns |  1.84 |         - |        - |
-| AsyncAwait   | UnityFxAsync | False   |  62.05 ns |  1.41 |     360 B |        - |
-| AsyncAwait   | ValueTask    | False   |  70.66 ns |  1.61 |         - |        - |
-|              |              |         |           |       |           |          |
-| AsyncAwait   | Callback     | True    |  52.06 ns |  1.00 |     832 B |        - |
-| AsyncAwait   | ProtoPromise | True    | 401.37 ns |  7.71 |         - |    624 B |
-| AsyncAwait   | RsgPromise   | True    |        NA |     ? |        NA |       NA |
-| AsyncAwait   | Task         | True    | 455.15 ns |  8.74 |    1120 B |        - |
-| AsyncAwait   | UniTask      | True    | 478.92 ns |  9.20 |         - |    744 B |
-| AsyncAwait   | UnityFxAsync | True    | 433.54 ns |  8.33 |    1952 B |        - |
-| AsyncAwait   | ValueTask    | True    | 498.24 ns |  9.57 |     968 B |     40 B |
-|              |              |         |           |       |           |          |
-| ContinueWith | Callback     | False   |  44.91 ns |  1.00 |     832 B |        - |
-| ContinueWith | ProtoPromise | False   | 107.35 ns |  2.39 |         - |        - |
-| ContinueWith | RsgPromise   | False   |  89.26 ns |  1.99 |    1032 B |        - |
-| ContinueWith | Task         | False   | 384.44 ns |  8.56 |    1224 B |        - |
-| ContinueWith | UniTask      | False   | 158.15 ns |  3.52 |         - |        - |
-| ContinueWith | UnityFxAsync | False   | 319.22 ns |  7.11 |    1304 B |        - |
-| ContinueWith | ValueTask    | False   |        NA |     ? |        NA |       NA |
-|              |              |         |           |       |           |          |
-| ContinueWith | Callback     | True    |  53.44 ns |  1.00 |     832 B |        - |
-| ContinueWith | ProtoPromise | True    | 375.57 ns |  7.03 |         - |    336 B |
-| ContinueWith | RsgPromise   | True    | 889.53 ns | 16.64 |   10104 B |        - |
-| ContinueWith | Task         | True    | 646.31 ns | 12.09 |    1864 B |        - |
-| ContinueWith | UniTask      | True    | 720.61 ns | 13.48 |         - |  1,296 B |
-| ContinueWith | UnityFxAsync | True    | 431.36 ns |  8.07 |    1560 B |     16 B |
-| ContinueWith | ValueTask    | True    |        NA |     ? |        NA |       NA |
+| Type         | Method       | Pending | Mean      | Ratio | Allocated | Pooled |
+|------------- |------------- |-------- |----------:|------:|----------:|-------:|
+| AsyncAwait   | Callback     | False   |  41.84 ns |  1.00 |     832 B |      - |
+| AsyncAwait   | ProtoPromise | False   |  16.38 ns |  0.39 |         - |      - |
+| AsyncAwait   | RsgPromise   | False   |        NA |     ? |        NA |     NA |
+| AsyncAwait   | Task         | False   |  31.88 ns |  0.76 |     192 B |      - |
+| AsyncAwait   | UniTask      | False   |  33.59 ns |  0.80 |         - |      - |
+| AsyncAwait   | UnityFxAsync | False   |  45.51 ns |  1.09 |     360 B |      - |
+| AsyncAwait   | ValueTask    | False   |  33.03 ns |  0.79 |         - |      - |
+|              |              |         |           |       |           |        |
+| AsyncAwait   | Callback     | True    |  51.67 ns |  1.00 |     832 B |      - |
+| AsyncAwait   | ProtoPromise | True    | 329.77 ns |  6.38 |         - |  600 B |
+| AsyncAwait   | RsgPromise   | True    |        NA |     ? |        NA |     NA |
+| AsyncAwait   | Task         | True    | 403.93 ns |  7.82 |    1120 B |  376 B |
+| AsyncAwait   | UniTask      | True    | 377.76 ns |  7.31 |         - |  720 B |
+| AsyncAwait   | UnityFxAsync | True    | 367.65 ns |  7.12 |    1952 B |      - |
+| AsyncAwait   | ValueTask    | True    | 492.04 ns |  9.52 |    1352 B |  504 B |
+|              |              |         |           |       |           |        |
+| ContinueWith | Callback     | False   |  42.59 ns |  1.00 |     832 B |      - |
+| ContinueWith | ProtoPromise | False   |  78.01 ns |  1.83 |         - |      - |
+| ContinueWith | RsgPromise   | False   |  74.85 ns |  1.76 |    1032 B |      - |
+| ContinueWith | Task         | False   | 298.10 ns |  7.00 |    1224 B |      - |
+| ContinueWith | UniTask      | False   |  82.09 ns |  1.93 |         - |      - |
+| ContinueWith | UnityFxAsync | False   | 239.16 ns |  5.62 |    1304 B |      - |
+| ContinueWith | ValueTask    | False   |        NA |     ? |        NA |     NA |
+|              |              |         |           |       |           |        |
+| ContinueWith | Callback     | True    |  51.70 ns |  1.00 |     832 B |      - |
+| ContinueWith | ProtoPromise | True    | 316.67 ns |  6.13 |         - |  312 B |
+| ContinueWith | RsgPromise   | True    | 770.52 ns | 14.91 |   10104 B |      - |
+| ContinueWith | Task         | True    | 525.95 ns | 10.17 |    1864 B |      - |
+| ContinueWith | UniTask      | True    | 528.12 ns | 10.22 |         - | 1272 B |
+| ContinueWith | UnityFxAsync | True    | 365.29 ns |  7.07 |    1560 B |      - |
+| ContinueWith | ValueTask    | True    |        NA |     ? |        NA |     NA |

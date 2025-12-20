@@ -2,20 +2,14 @@
 using Helper;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
+using BenchmarkDotNet.Portability;
+using System.Runtime.CompilerServices;
 
 namespace AsynchronousBenchmarks
 {
-    public class UniTaskAsyncHelper
+    public readonly struct UniTaskAsyncHelper(bool isPending)
     {
-        public bool hasInvoked;
-        private readonly bool _isPending;
-        private readonly Stack<AutoResetUniTaskCompletionSource> _completionSources;
-
-        public UniTaskAsyncHelper(bool isPending)
-        {
-            _isPending = isPending;
-            _completionSources = new Stack<AutoResetUniTaskCompletionSource>(2);
-        }
+        private readonly Stack<AutoResetUniTaskCompletionSource> _completionSources = new(2);
 
         public void ResolvePending()
         {
@@ -27,7 +21,7 @@ namespace AsynchronousBenchmarks
 
         public UniTask GetBaseUniTask()
         {
-            if (!_isPending)
+            if (!isPending)
             {
                 return UniTask.CompletedTask;
             }
@@ -40,31 +34,32 @@ namespace AsynchronousBenchmarks
     partial class AsyncAwait
     {
         // static to match ContinueWith
-        private static UniTaskAsyncHelper _uniTaskHelper;
+        private static UniTaskAsyncHelper s_uniTaskHelper;
 
         [GlobalSetup(Target = nameof(UniTask))]
         public void UniTaskSetup()
         {
-            _uniTaskHelper = new UniTaskAsyncHelper(Pending);
-            // Run once in setup to initialize static memory so it isn't counted in the survived memory measurement.
-            // UniTask doesn't have an API to clear its object pool, so we set hasInvoked instead.
-            _uniTaskHelper.hasInvoked = true;
-            UniTask();
-            _uniTaskHelper.hasInvoked = false;
+            s_uniTaskHelper = new UniTaskAsyncHelper(Pending);
+        }
+
+        [GlobalCleanup(Target = nameof(UniTask))]
+        [MethodImpl(CodeGenHelper.AggressiveOptimizationOption)]
+        public void UniTaskCleanup()
+        {
+            InitTotalMemory();
+            var initialTotalMemory = GetTotalMemory();
+            // UniTask doesn't have an API to clear its object pool. We just run the method twice without resolving the completion sources instead.
+            UniTask_ExecuteAsync().Forget();
+            UniTask_ExecuteAsync().Forget();
+            s_uniTaskHelper.ResolvePending();
+            _pooledMemory = GetTotalMemory() - initialTotalMemory;
         }
 
         [Benchmark]
         public void UniTask()
         {
             UniTask_ExecuteAsync().Forget();
-            if (!_uniTaskHelper.hasInvoked)
-            {
-                // Execute again the first time to measure survived memory.
-                // Subsequent runs only execute once to measure the execution time.
-                _uniTaskHelper.hasInvoked = true;
-                UniTask_ExecuteAsync().Forget();
-            }
-            _uniTaskHelper.ResolvePending();
+            s_uniTaskHelper.ResolvePending();
         }
 
         private static async UniTask UniTask_ExecuteAsync()
@@ -79,9 +74,9 @@ namespace AsynchronousBenchmarks
             _ = await UniTask_GetValueAsync<T2>();
         }
 
-        private static async UniTask<T> UniTask_GetValueAsync<T>()
+        private static async UniTask<T?> UniTask_GetValueAsync<T>()
         {
-            await _uniTaskHelper.GetBaseUniTask();
+            await s_uniTaskHelper.GetBaseUniTask();
             return default;
         }
     }
@@ -89,31 +84,32 @@ namespace AsynchronousBenchmarks
     partial class ContinueWith
     {
         // Static so .ContinueWith callbacks don't need to capture `this`, which we are not interested in measuring.
-        private static UniTaskAsyncHelper _uniTaskHelper;
+        private static UniTaskAsyncHelper s_uniTaskHelper;
 
         [GlobalSetup(Target = nameof(UniTask))]
         public void UniTaskSetup()
         {
-            _uniTaskHelper = new UniTaskAsyncHelper(Pending);
-            // Run once in setup to initialize static memory so it isn't counted in the survived memory measurement.
-            // UniTask doesn't have an API to clear its object pool, so we set hasInvoked instead.
-            _uniTaskHelper.hasInvoked = true;
-            UniTask();
-            _uniTaskHelper.hasInvoked = false;
+            s_uniTaskHelper = new UniTaskAsyncHelper(Pending);
+        }
+
+        [GlobalCleanup(Target = nameof(UniTask))]
+        [MethodImpl(CodeGenHelper.AggressiveOptimizationOption)]
+        public void UniTaskCleanup()
+        {
+            InitTotalMemory();
+            var initialTotalMemory = GetTotalMemory();
+            // UniTask doesn't have an API to clear its object pool. We just run the method twice without resolving the completion sources instead.
+            UniTask_ExecuteAsync().Forget();
+            UniTask_ExecuteAsync().Forget();
+            s_uniTaskHelper.ResolvePending();
+            _pooledMemory = GetTotalMemory() - initialTotalMemory;
         }
 
         [Benchmark]
         public void UniTask()
         {
             UniTask_ExecuteAsync().Forget();
-            if (!_uniTaskHelper.hasInvoked)
-            {
-                // Execute again the first time to measure survived memory.
-                // Subsequent runs only execute once to measure the execution time.
-                _uniTaskHelper.hasInvoked = true;
-                UniTask_ExecuteAsync().Forget();
-            }
-            _uniTaskHelper.ResolvePending();
+            s_uniTaskHelper.ResolvePending();
         }
 
         private static UniTask UniTask_ExecuteAsync()
@@ -130,9 +126,9 @@ namespace AsynchronousBenchmarks
                 .ContinueWith(_ => { });
         }
 
-        private static UniTask<T> UniTask_GetValueAsync<T>()
+        private static UniTask<T?> UniTask_GetValueAsync<T>()
         {
-            return _uniTaskHelper.GetBaseUniTask()
+            return s_uniTaskHelper.GetBaseUniTask()
                 .ContinueWith(() => default(T));
         }
     }

@@ -1,21 +1,15 @@
 ﻿using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Portability;
 using Helper;
 using Proto.Promises;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace AsynchronousBenchmarks
 {
-    public class ProtoAsyncHelper
+    public readonly struct ProtoAsyncHelper(bool isPending)
     {
-        public bool hasInvoked;
-        private readonly bool _isPending;
-        private readonly Stack<Promise.Deferred> _deferreds;
-
-        public ProtoAsyncHelper(bool isPending)
-        {
-            _isPending = isPending;
-            _deferreds = new Stack<Promise.Deferred>(2);
-        }
+        private readonly Stack<Promise.Deferred> _deferreds = new(2);
 
         public void ResolvePending()
         {
@@ -27,7 +21,7 @@ namespace AsynchronousBenchmarks
 
         public Promise GetBasePromise()
         {
-            if (!_isPending)
+            if (!isPending)
             {
                 return Promise.Resolved();
             }
@@ -40,32 +34,33 @@ namespace AsynchronousBenchmarks
     partial class AsyncAwait
     {
         // static to match ContinueWith
-        private static ProtoAsyncHelper _protoHelper;
+        private static ProtoAsyncHelper s_protoHelper;
 
         [GlobalSetup(Target = nameof(ProtoPromise))]
         public void ProtoPromiseSetup()
         {
-            _protoHelper = new ProtoAsyncHelper(Pending);
-            // Run once in setup to initialize static memory so it isn't counted in the survived memory measurement.
-            // Not clearing the pool to stay as fair as possible with UniTask, which doesn't have an API to clear its object pool. Set hasInvoked instead.
-            _protoHelper.hasInvoked = true;
-            ProtoPromise();
-            _protoHelper.hasInvoked = false;
+            s_protoHelper = new ProtoAsyncHelper(Pending);
+        }
+
+        [GlobalCleanup(Target = nameof(ProtoPromise))]
+        [MethodImpl(CodeGenHelper.AggressiveOptimizationOption)]
+        public void ProtoPromiseCleanup()
+        {
+            InitTotalMemory();
+            var initialTotalMemory = GetTotalMemory();
+            // Not clearing the pool to stay as fair as possible with UniTask, which doesn't have an API to clear its object pool. We just run the method twice without resolving the deferreds instead.
             //Promise.Manager.ClearObjectPool();
+            Proto_ExecuteAsync().Forget();
+            Proto_ExecuteAsync().Forget();
+            s_protoHelper.ResolvePending();
+            _pooledMemory = GetTotalMemory() - initialTotalMemory;
         }
 
         [Benchmark]
         public void ProtoPromise()
         {
             Proto_ExecuteAsync().Forget();
-            if (!_protoHelper.hasInvoked)
-            {
-                // Execute again the first time to measure survived memory.
-                // Subsequent runs only execute once to measure the execution time.
-                _protoHelper.hasInvoked = true;
-                Proto_ExecuteAsync().Forget();
-            }
-            _protoHelper.ResolvePending();
+            s_protoHelper.ResolvePending();
         }
 
         private static async Promise Proto_ExecuteAsync()
@@ -80,9 +75,9 @@ namespace AsynchronousBenchmarks
             _ = await Proto_GetValueAsync<T2>();
         }
 
-        private static async Promise<T> Proto_GetValueAsync<T>()
+        private static async Promise<T?> Proto_GetValueAsync<T>()
         {
-            await _protoHelper.GetBasePromise();
+            await s_protoHelper.GetBasePromise();
             return default;
         }
     }
@@ -90,32 +85,33 @@ namespace AsynchronousBenchmarks
     partial class ContinueWith
     {
         // Static so .Then callbacks don't need to capture `this`, which we are not interested in measuring.
-        private static ProtoAsyncHelper _protoHelper;
+        private static ProtoAsyncHelper s_protoHelper;
 
         [GlobalSetup(Target = nameof(ProtoPromise))]
         public void ProtoPromiseSetup()
         {
-            _protoHelper = new ProtoAsyncHelper(Pending);
-            // Run once in setup to initialize static memory so it isn't counted in the survived memory measurement.
-            // Not clearing the pool to stay as fair as possible with UniTask, which doesn't have an API to clear its object pool. Set hasInvoked instead.
-            _protoHelper.hasInvoked = true;
-            ProtoPromise();
-            _protoHelper.hasInvoked = false;
+            s_protoHelper = new ProtoAsyncHelper(Pending);
+        }
+
+        [GlobalCleanup(Target = nameof(ProtoPromise))]
+        [MethodImpl(CodeGenHelper.AggressiveOptimizationOption)]
+        public void ProtoPromiseCleanup()
+        {
+            InitTotalMemory();
+            var initialTotalMemory = GetTotalMemory();
+            // Not clearing the pool to stay as fair as possible with UniTask, which doesn't have an API to clear its object pool. We just run the method twice without resolving the deferreds instead.
             //Promise.Manager.ClearObjectPool();
+            Proto_ExecuteAsync().Forget();
+            Proto_ExecuteAsync().Forget();
+            s_protoHelper.ResolvePending();
+            _pooledMemory = GetTotalMemory() - initialTotalMemory;
         }
 
         [Benchmark]
         public void ProtoPromise()
         {
             Proto_ExecuteAsync().Forget();
-            if (!_protoHelper.hasInvoked)
-            {
-                // Execute again the first time to measure survived memory.
-                // Subsequent runs only execute once to measure the execution time.
-                _protoHelper.hasInvoked = true;
-                Proto_ExecuteAsync().Forget();
-            }
-            _protoHelper.ResolvePending();
+            s_protoHelper.ResolvePending();
         }
 
         private static Promise Proto_ExecuteAsync()
@@ -132,9 +128,9 @@ namespace AsynchronousBenchmarks
                 .Then(_ => { });
         }
 
-        private static Promise<T> Proto_GetValueAsync<T>()
+        private static Promise<T?> Proto_GetValueAsync<T>()
         {
-            return _protoHelper.GetBasePromise()
+            return s_protoHelper.GetBasePromise()
                 .Then(() => default(T));
         }
     }

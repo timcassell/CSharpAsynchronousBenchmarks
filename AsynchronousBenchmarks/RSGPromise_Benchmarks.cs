@@ -1,21 +1,15 @@
 ﻿using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Portability;
 using Helper;
 using RSG;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace AsynchronousBenchmarks
 {
-    public class RsgAsyncHelper
+    public readonly struct RsgAsyncHelper(bool isPending)
     {
-        public bool hasInvoked;
-        private readonly bool _isPending;
-        private readonly Stack<Promise> _promises;
-
-        public RsgAsyncHelper(bool isPending)
-        {
-            _isPending = isPending;
-            _promises = new Stack<Promise>(2);
-        }
+        private readonly Stack<Promise> _promises = new(2);
 
         public void ResolvePending()
         {
@@ -27,7 +21,7 @@ namespace AsynchronousBenchmarks
 
         public IPromise GetBasePromise()
         {
-            if (!_isPending)
+            if (!isPending)
             {
                 return Promise.Resolved();
             }
@@ -50,30 +44,31 @@ namespace AsynchronousBenchmarks
     partial class ContinueWith
     {
         // Static so .Then callbacks don't need to capture `this`, which we are not interested in measuring.
-        private static RsgAsyncHelper _rsgHelper;
+        private static RsgAsyncHelper s_rsgHelper;
 
         [GlobalSetup(Target = nameof(RsgPromise))]
         public void RsgPromiseSetup()
         {
-            _rsgHelper = new RsgAsyncHelper(Pending);
-            // Run once in setup to initialize static memory so it isn't counted in the survived memory measurement.
-            _rsgHelper.hasInvoked = true;
-            RsgPromise();
-            _rsgHelper.hasInvoked = false;
+            s_rsgHelper = new(Pending);
+        }
+
+        [GlobalCleanup(Target = nameof(RsgPromise))]
+        [MethodImpl(CodeGenHelper.AggressiveOptimizationOption)]
+        public void RsgPromiseCleanup()
+        {
+            InitTotalMemory();
+            var initialTotalMemory = GetTotalMemory();
+            Rsg_ExecuteAsync().Done();
+            Rsg_ExecuteAsync().Done();
+            s_rsgHelper.ResolvePending();
+            _pooledMemory = GetTotalMemory() - initialTotalMemory;
         }
 
         [Benchmark]
         public void RsgPromise()
         {
             Rsg_ExecuteAsync().Done();
-            if (!_rsgHelper.hasInvoked)
-            {
-                // Execute again the first time to measure survived memory.
-                // Subsequent runs only execute once to measure the execution time.
-                _rsgHelper.hasInvoked = true;
-                Rsg_ExecuteAsync().Done();
-            }
-            _rsgHelper.ResolvePending();
+            s_rsgHelper.ResolvePending();
         }
 
         private static IPromise Rsg_ExecuteAsync()
@@ -90,11 +85,11 @@ namespace AsynchronousBenchmarks
                 .Then(_ => { });
         }
 
-        private static IPromise<T> Rsg_GetValueAsync<T>()
+        private static IPromise<T?> Rsg_GetValueAsync<T>()
         {
             // RSG promises don't support converting to another value directly without wrapping it in a promise.
-            return _rsgHelper.GetBasePromise()
-                .Then(() => Promise<T>.Resolved(default));
+            return s_rsgHelper.GetBasePromise()
+                .Then(() => Promise<T?>.Resolved(default));
         }
     }
 }

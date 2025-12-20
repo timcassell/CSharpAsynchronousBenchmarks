@@ -1,22 +1,16 @@
 ﻿using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Portability;
 using Helper;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityFx.Async;
 using UnityFx.Async.Promises;
 
 namespace AsynchronousBenchmarks
 {
-    public class UnityFxAsyncHelper
+    public readonly struct UnityFxAsyncHelper(bool isPending)
     {
-        public bool hasInvoked;
-        private readonly bool _isPending;
-        private readonly Stack<AsyncCompletionSource> _completionSources;
-
-        public UnityFxAsyncHelper(bool isPending)
-        {
-            _isPending = isPending;
-            _completionSources = new Stack<AsyncCompletionSource>(2);
-        }
+        private readonly Stack<AsyncCompletionSource> _completionSources = new(2);
 
         public void ResolvePending()
         {
@@ -28,7 +22,7 @@ namespace AsynchronousBenchmarks
 
         public AsyncResult GetBaseUnityFx()
         {
-            if (!_isPending)
+            if (!isPending)
             {
                 return AsyncResult.CompletedOperation;
             }
@@ -41,30 +35,31 @@ namespace AsynchronousBenchmarks
     partial class AsyncAwait
     {
         // static to match ContinueWith
-        private static UnityFxAsyncHelper _UnityFxHelper;
+        private static UnityFxAsyncHelper s_unityFxHelper;
 
         [GlobalSetup(Target = nameof(UnityFxAsync))]
         public void UnityFxSetup()
         {
-            _UnityFxHelper = new UnityFxAsyncHelper(Pending);
-            // Run once in setup to initialize static memory so it isn't counted in the survived memory measurement.
-            _UnityFxHelper.hasInvoked = true;
-            UnityFxAsync();
-            _UnityFxHelper.hasInvoked = false;
+            s_unityFxHelper = new UnityFxAsyncHelper(Pending);
+        }
+
+        [GlobalCleanup(Target = nameof(UnityFx))]
+        [MethodImpl(CodeGenHelper.AggressiveOptimizationOption)]
+        public void UnityFxCleanup()
+        {
+            InitTotalMemory();
+            var initialTotalMemory = GetTotalMemory();
+            UnityFx_ExecuteAsync().Done();
+            UnityFx_ExecuteAsync().Done();
+            s_unityFxHelper.ResolvePending();
+            _pooledMemory = GetTotalMemory() - initialTotalMemory;
         }
 
         [Benchmark]
         public void UnityFxAsync()
         {
             UnityFx_ExecuteAsync().Done();
-            if (!_UnityFxHelper.hasInvoked)
-            {
-                // Execute again the first time to measure survived memory.
-                // Subsequent runs only execute once to measure the execution time.
-                _UnityFxHelper.hasInvoked = true;
-                UnityFx_ExecuteAsync().Done();
-            }
-            _UnityFxHelper.ResolvePending();
+            s_unityFxHelper.ResolvePending();
         }
 
         private static async AsyncResult UnityFx_ExecuteAsync()
@@ -79,9 +74,9 @@ namespace AsynchronousBenchmarks
             _ = await UnityFx_GetValueAsync<T2>();
         }
 
-        private static async AsyncResult<T> UnityFx_GetValueAsync<T>()
+        private static async AsyncResult<T?> UnityFx_GetValueAsync<T>()
         {
-            await _UnityFxHelper.GetBaseUnityFx();
+            await s_unityFxHelper.GetBaseUnityFx();
             return default;
         }
     }
@@ -89,30 +84,31 @@ namespace AsynchronousBenchmarks
     partial class ContinueWith
     {
         // Static so .ContinueWith callbacks don't need to capture `this`, which we are not interested in measuring.
-        private static UnityFxAsyncHelper _UnityFxHelper;
+        private static UnityFxAsyncHelper s_unityFxHelper;
 
         [GlobalSetup(Target = nameof(UnityFxAsync))]
         public void UnityFxSetup()
         {
-            _UnityFxHelper = new UnityFxAsyncHelper(Pending);
-            // Run once in setup to initialize static memory so it isn't counted in the survived memory measurement.
-            _UnityFxHelper.hasInvoked = true;
-            UnityFxAsync();
-            _UnityFxHelper.hasInvoked = false;
+            s_unityFxHelper = new UnityFxAsyncHelper(Pending);
+        }
+
+        [GlobalCleanup(Target = nameof(UnityFx))]
+        [MethodImpl(CodeGenHelper.AggressiveOptimizationOption)]
+        public void UnityFxCleanup()
+        {
+            InitTotalMemory();
+            var initialTotalMemory = GetTotalMemory();
+            UnityFx_ExecuteAsync().Done();
+            UnityFx_ExecuteAsync().Done();
+            s_unityFxHelper.ResolvePending();
+            _pooledMemory = GetTotalMemory() - initialTotalMemory;
         }
 
         [Benchmark]
         public void UnityFxAsync()
         {
             UnityFx_ExecuteAsync().Done();
-            if (!_UnityFxHelper.hasInvoked)
-            {
-                // Execute again the first time to measure survived memory.
-                // Subsequent runs only execute once to measure the execution time.
-                _UnityFxHelper.hasInvoked = true;
-                UnityFx_ExecuteAsync().Done();
-            }
-            _UnityFxHelper.ResolvePending();
+            s_unityFxHelper.ResolvePending();
         }
 
         private static IAsyncOperation UnityFx_ExecuteAsync()
@@ -129,9 +125,9 @@ namespace AsynchronousBenchmarks
                 .ContinueWith(_ => { }, AsyncContinuationOptions.ExecuteSynchronously);
         }
 
-        private static IAsyncOperation<T> UnityFx_GetValueAsync<T>()
+        private static IAsyncOperation<T?> UnityFx_GetValueAsync<T>()
         {
-            return _UnityFxHelper.GetBaseUnityFx()
+            return s_unityFxHelper.GetBaseUnityFx()
                 .ContinueWith(_ => default(T), AsyncContinuationOptions.ExecuteSynchronously);
         }
     }

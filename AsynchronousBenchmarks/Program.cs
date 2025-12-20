@@ -1,4 +1,5 @@
-﻿using BenchmarkDotNet.Running;
+﻿using BenchmarkDotNet.Configs;
+using BenchmarkDotNet.Running;
 
 namespace AsynchronousBenchmarks
 {
@@ -10,7 +11,7 @@ namespace AsynchronousBenchmarks
         /// </summary>
         public static void Main(string[] args)
         {
-            BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
+            BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args, DefaultConfig.Instance.AddDiagnoser(new PooledMemoryDiagnoser()));
         }
     }
 }
