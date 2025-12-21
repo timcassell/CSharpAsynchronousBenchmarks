@@ -2,14 +2,14 @@
 
 This project is built to benchmark C# asynchronous libraries against each other.
 
-These benchmarks are ran using a fork of [BenchmarkDotNet](https://github.com/dotnet/BenchmarkDotNet) where I added the ability to measure survived memory.
+These benchmarks are ran using [BenchmarkDotNet](https://github.com/dotnet/BenchmarkDotNet).
 
 This is a non-exhaustive benchmark of each library's features. It is only meant to compare the most common use scenario (awaiting an asynchronous result). Some libraries provide more/different features than others.
 
 Asynchronous libraries benchmarked:
 - Built-in callbacks (`System.Action`), measured as the baseline
 - [System.Threading.Tasks (TPL)](https://docs.microsoft.com/en-us/dotnet/standard/parallel-programming/task-parallel-library-tpl), `Task` and `ValueTask`
-- [ProtoPromise v3.4.0](https://github.com/timcassell/ProtoPromise)
+- [ProtoPromise v3.5.0](https://github.com/timcassell/ProtoPromise)
 - [UniTask v2.5.10](https://github.com/Cysharp/UniTask)
 - [UnityFx.Async v1.1.0](https://github.com/Arvtesh/UnityFx.Async)
 - [RSG Promises v3.0.1](https://github.com/Real-Serious-Games/C-Sharp-Promise)
