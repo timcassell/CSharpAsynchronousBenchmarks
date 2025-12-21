@@ -36,34 +36,34 @@ AMD Ryzen 7 9800X3D 4.70GHz, 1 CPU, 16 logical and 8 physical cores
 
 | Type         | Method       | Pending | Mean      | Ratio | Allocated | Pooled |
 |------------- |------------- |-------- |----------:|------:|----------:|-------:|
-| AsyncAwait   | Callback     | False   |  41.84 ns |  1.00 |     832 B |      - |
-| AsyncAwait   | ProtoPromise | False   |  16.38 ns |  0.39 |         - |      - |
+| AsyncAwait   | Callback     | False   |  42.28 ns |  1.00 |     832 B |      - |
+| AsyncAwait   | ProtoPromise | False   |  16.49 ns |  0.39 |         - |      - |
 | AsyncAwait   | RsgPromise   | False   |        NA |     ? |        NA |     NA |
-| AsyncAwait   | Task         | False   |  31.88 ns |  0.76 |     192 B |      - |
-| AsyncAwait   | UniTask      | False   |  33.59 ns |  0.80 |         - |      - |
-| AsyncAwait   | UnityFxAsync | False   |  45.51 ns |  1.09 |     360 B |      - |
-| AsyncAwait   | ValueTask    | False   |  33.03 ns |  0.79 |         - |      - |
+| AsyncAwait   | Task         | False   |  32.36 ns |  0.77 |     192 B |      - |
+| AsyncAwait   | UniTask      | False   |  33.75 ns |  0.80 |         - |      - |
+| AsyncAwait   | UnityFxAsync | False   |  44.41 ns |  1.05 |     360 B |      - |
+| AsyncAwait   | ValueTask    | False   |  33.21 ns |  0.79 |         - |      - |
 |              |              |         |           |       |           |        |
-| AsyncAwait   | Callback     | True    |  51.67 ns |  1.00 |     832 B |      - |
-| AsyncAwait   | ProtoPromise | True    | 329.77 ns |  6.38 |         - |  600 B |
+| AsyncAwait   | Callback     | True    |  51.69 ns |  1.00 |     832 B |      - |
+| AsyncAwait   | ProtoPromise | True    | 326.92 ns |  6.33 |         - |  600 B |
 | AsyncAwait   | RsgPromise   | True    |        NA |     ? |        NA |     NA |
-| AsyncAwait   | Task         | True    | 403.93 ns |  7.82 |    1120 B |  376 B |
-| AsyncAwait   | UniTask      | True    | 377.76 ns |  7.31 |         - |  720 B |
-| AsyncAwait   | UnityFxAsync | True    | 367.65 ns |  7.12 |    1952 B |      - |
-| AsyncAwait   | ValueTask    | True    | 492.04 ns |  9.52 |    1352 B |  504 B |
+| AsyncAwait   | Task         | True    | 405.42 ns |  7.84 |    1120 B |      - |
+| AsyncAwait   | UniTask      | True    | 373.51 ns |  7.23 |         - |  720 B |
+| AsyncAwait   | UnityFxAsync | True    | 366.40 ns |  7.09 |    1952 B |      - |
+| AsyncAwait   | ValueTask    | True    | 492.82 ns |  9.53 |    1352 B |      - |
 |              |              |         |           |       |           |        |
-| ContinueWith | Callback     | False   |  42.59 ns |  1.00 |     832 B |      - |
-| ContinueWith | ProtoPromise | False   |  78.01 ns |  1.83 |         - |      - |
-| ContinueWith | RsgPromise   | False   |  74.85 ns |  1.76 |    1032 B |      - |
-| ContinueWith | Task         | False   | 298.10 ns |  7.00 |    1224 B |      - |
-| ContinueWith | UniTask      | False   |  82.09 ns |  1.93 |         - |      - |
-| ContinueWith | UnityFxAsync | False   | 239.16 ns |  5.62 |    1304 B |      - |
+| ContinueWith | Callback     | False   |  42.34 ns |  1.00 |     832 B |      - |
+| ContinueWith | ProtoPromise | False   |  78.77 ns |  1.86 |         - |      - |
+| ContinueWith | RsgPromise   | False   |  74.19 ns |  1.75 |    1032 B |      - |
+| ContinueWith | Task         | False   | 300.68 ns |  7.10 |    1224 B |      - |
+| ContinueWith | UniTask      | False   |  81.72 ns |  1.93 |         - |      - |
+| ContinueWith | UnityFxAsync | False   | 238.66 ns |  5.64 |    1304 B |      - |
 | ContinueWith | ValueTask    | False   |        NA |     ? |        NA |     NA |
 |              |              |         |           |       |           |        |
-| ContinueWith | Callback     | True    |  51.70 ns |  1.00 |     832 B |      - |
-| ContinueWith | ProtoPromise | True    | 316.67 ns |  6.13 |         - |  312 B |
-| ContinueWith | RsgPromise   | True    | 770.52 ns | 14.91 |   10104 B |      - |
-| ContinueWith | Task         | True    | 525.95 ns | 10.17 |    1864 B |      - |
-| ContinueWith | UniTask      | True    | 528.12 ns | 10.22 |         - | 1272 B |
-| ContinueWith | UnityFxAsync | True    | 365.29 ns |  7.07 |    1560 B |      - |
+| ContinueWith | Callback     | True    |  51.92 ns |  1.00 |     832 B |      - |
+| ContinueWith | ProtoPromise | True    | 312.85 ns |  6.03 |         - |  312 B |
+| ContinueWith | RsgPromise   | True    | 790.59 ns | 15.23 |   10104 B |      - |
+| ContinueWith | Task         | True    | 527.94 ns | 10.17 |    1864 B |      - |
+| ContinueWith | UniTask      | True    | 522.47 ns | 10.06 |         - | 1272 B |
+| ContinueWith | UnityFxAsync | True    | 364.54 ns |  7.02 |    1560 B |      - |
 | ContinueWith | ValueTask    | True    |        NA |     ? |        NA |     NA |

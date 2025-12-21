@@ -1,9 +1,6 @@
 ﻿using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Portability;
-using Helper;
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
@@ -11,7 +8,7 @@ namespace AsynchronousBenchmarks
 {
     public readonly struct TaskAsyncHelper(bool isPending)
     {
-        private readonly Stack<TaskCompletionSource<bool>> _completionSources = new(16);
+        private readonly Stack<TaskCompletionSource<bool>> _completionSources = new(2);
 
         public void ResolvePending()
         {
@@ -50,10 +47,17 @@ namespace AsynchronousBenchmarks
         {
             InitTotalMemory();
             var initialTotalMemory = GetTotalMemory();
-            _ = Task_ExecuteAsync();
-            _ = Task_ExecuteAsync();
-            s_taskHelper.ResolvePending();
+            ExecuteForSurvived();
             _pooledMemory = GetTotalMemory() - initialTotalMemory;
+
+            // Prevents Task surviving on the stack during the measurement.
+            [MethodImpl(MethodImplOptions.NoInlining | CodeGenHelper.AggressiveOptimizationOption)]
+            static void ExecuteForSurvived()
+            {
+                _ = Task_ExecuteAsync();
+                _ = Task_ExecuteAsync();
+                s_taskHelper.ResolvePending();
+            }
         }
 
         [Benchmark]
@@ -99,10 +103,17 @@ namespace AsynchronousBenchmarks
         {
             InitTotalMemory();
             var initialTotalMemory = GetTotalMemory();
-            _ = Task_ExecuteAsync();
-            _ = Task_ExecuteAsync();
-            s_taskHelper.ResolvePending();
+            ExecuteForSurvived();
             _pooledMemory = GetTotalMemory() - initialTotalMemory;
+
+            // Prevents Task surviving on the stack during the measurement.
+            [MethodImpl(MethodImplOptions.NoInlining | CodeGenHelper.AggressiveOptimizationOption)]
+            static void ExecuteForSurvived()
+            {
+                _ = Task_ExecuteAsync();
+                _ = Task_ExecuteAsync();
+                s_taskHelper.ResolvePending();
+            }
         }
 
         [Benchmark]

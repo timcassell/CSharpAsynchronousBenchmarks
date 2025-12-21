@@ -1,6 +1,5 @@
 ﻿using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Portability;
-using Helper;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -48,10 +47,17 @@ namespace AsynchronousBenchmarks
         {
             InitTotalMemory();
             var initialTotalMemory = GetTotalMemory();
-            _ = ValueTask_ExecuteAsync();
-            _ = ValueTask_ExecuteAsync();
-            s_valueTaskHelper.ResolvePending();
+            ExecuteForSurvived();
             _pooledMemory = GetTotalMemory() - initialTotalMemory;
+
+            // Prevents ValueTask surviving on the stack during the measurement.
+            [MethodImpl(MethodImplOptions.NoInlining | CodeGenHelper.AggressiveOptimizationOption)]
+            static void ExecuteForSurvived()
+            {
+                _ = ValueTask_ExecuteAsync();
+                _ = ValueTask_ExecuteAsync();
+                s_valueTaskHelper.ResolvePending();
+            }
         }
 
         [Benchmark]

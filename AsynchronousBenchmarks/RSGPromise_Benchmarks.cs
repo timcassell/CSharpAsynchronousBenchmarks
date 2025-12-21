@@ -1,6 +1,5 @@
 ﻿using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Portability;
-using Helper;
 using RSG;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -58,10 +57,17 @@ namespace AsynchronousBenchmarks
         {
             InitTotalMemory();
             var initialTotalMemory = GetTotalMemory();
-            Rsg_ExecuteAsync().Done();
-            Rsg_ExecuteAsync().Done();
-            s_rsgHelper.ResolvePending();
+            ExecuteForSurvived();
             _pooledMemory = GetTotalMemory() - initialTotalMemory;
+
+            // Prevents Promise surviving on the stack during the measurement.
+            [MethodImpl(MethodImplOptions.NoInlining | CodeGenHelper.AggressiveOptimizationOption)]
+            static void ExecuteForSurvived()
+            {
+                Rsg_ExecuteAsync().Done();
+                Rsg_ExecuteAsync().Done();
+                s_rsgHelper.ResolvePending();
+            }
         }
 
         [Benchmark]

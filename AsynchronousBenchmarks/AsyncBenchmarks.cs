@@ -1,5 +1,4 @@
 ﻿using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Engines;
 using BenchmarkDotNet.Portability;
 using System;
 using System.Runtime.CompilerServices;
@@ -14,6 +13,8 @@ namespace AsynchronousBenchmarks
 
         internal long _pooledMemory;
 
+        public long GetPooledMemory() => _pooledMemory;
+
         [MethodImpl(CodeGenHelper.AggressiveOptimizationOption)]
         protected void InitTotalMemory()
         {
@@ -24,10 +25,8 @@ namespace AsynchronousBenchmarks
                 throw new NotSupportedException();
             }
             // Measure bytes to allow GC monitor to make its initial allocations.
-            DeadCodeEliminationHelper.KeepAliveWithoutBoxing(GetTotalMemory());
+            PreventDeadCodeElimination(GetTotalMemory());
         }
-
-        public long GetPooledMemory() => _pooledMemory;
 
         [MethodImpl(CodeGenHelper.AggressiveOptimizationOption)]
         protected static long GetTotalMemory()
@@ -37,6 +36,9 @@ namespace AsynchronousBenchmarks
             GC.WaitForPendingFinalizers();
             return AppDomain.CurrentDomain.MonitoringSurvivedMemorySize;
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining | CodeGenHelper.AggressiveOptimizationOption)]
+        protected static void PreventDeadCodeElimination(long _) { }
     }
 
     [GroupBenchmarksBy(BenchmarkDotNet.Configs.BenchmarkLogicalGroupRule.ByCategory), BenchmarkCategory(nameof(AsyncAwait))]
@@ -48,10 +50,6 @@ namespace AsynchronousBenchmarks
     public partial class ContinueWith : AsyncBenchmark
     {
     }
-}
-
-namespace Helper
-{
     public struct Struct32
     {
         public long l1, l2, l3, l4;

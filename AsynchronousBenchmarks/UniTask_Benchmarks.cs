@@ -1,5 +1,4 @@
 ﻿using BenchmarkDotNet.Attributes;
-using Helper;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using BenchmarkDotNet.Portability;
@@ -48,11 +47,18 @@ namespace AsynchronousBenchmarks
         {
             InitTotalMemory();
             var initialTotalMemory = GetTotalMemory();
-            // UniTask doesn't have an API to clear its object pool. We just run the method twice without resolving the completion sources instead.
-            UniTask_ExecuteAsync().Forget();
-            UniTask_ExecuteAsync().Forget();
-            s_uniTaskHelper.ResolvePending();
+            ExecuteForSurvived();
             _pooledMemory = GetTotalMemory() - initialTotalMemory;
+
+            // Prevents Task surviving on the stack during the measurement.
+            [MethodImpl(MethodImplOptions.NoInlining | CodeGenHelper.AggressiveOptimizationOption)]
+            static void ExecuteForSurvived()
+            {
+                // UniTask doesn't have an API to clear its object pool. We just run the method twice without resolving the completion sources instead.
+                UniTask_ExecuteAsync().Forget();
+                UniTask_ExecuteAsync().Forget();
+                s_uniTaskHelper.ResolvePending();
+            }
         }
 
         [Benchmark]
@@ -98,11 +104,18 @@ namespace AsynchronousBenchmarks
         {
             InitTotalMemory();
             var initialTotalMemory = GetTotalMemory();
-            // UniTask doesn't have an API to clear its object pool. We just run the method twice without resolving the completion sources instead.
-            UniTask_ExecuteAsync().Forget();
-            UniTask_ExecuteAsync().Forget();
-            s_uniTaskHelper.ResolvePending();
+            ExecuteForSurvived();
             _pooledMemory = GetTotalMemory() - initialTotalMemory;
+
+            // Prevents Task surviving on the stack during the measurement.
+            [MethodImpl(MethodImplOptions.NoInlining | CodeGenHelper.AggressiveOptimizationOption)]
+            static void ExecuteForSurvived()
+            {
+                // UniTask doesn't have an API to clear its object pool. We just run the method twice without resolving the completion sources instead.
+                UniTask_ExecuteAsync().Forget();
+                UniTask_ExecuteAsync().Forget();
+                s_uniTaskHelper.ResolvePending();
+            }
         }
 
         [Benchmark]

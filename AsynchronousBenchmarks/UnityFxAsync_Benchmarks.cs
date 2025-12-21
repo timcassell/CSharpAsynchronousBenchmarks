@@ -1,6 +1,5 @@
 ﻿using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Portability;
-using Helper;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityFx.Async;
@@ -49,10 +48,17 @@ namespace AsynchronousBenchmarks
         {
             InitTotalMemory();
             var initialTotalMemory = GetTotalMemory();
-            UnityFx_ExecuteAsync().Done();
-            UnityFx_ExecuteAsync().Done();
-            s_unityFxHelper.ResolvePending();
+            ExecuteForSurvived();
             _pooledMemory = GetTotalMemory() - initialTotalMemory;
+
+            // Prevents IAsyncOperation surviving on the stack during the measurement.
+            [MethodImpl(MethodImplOptions.NoInlining | CodeGenHelper.AggressiveOptimizationOption)]
+            static void ExecuteForSurvived()
+            {
+                UnityFx_ExecuteAsync().Done();
+                UnityFx_ExecuteAsync().Done();
+                s_unityFxHelper.ResolvePending();
+            }
         }
 
         [Benchmark]
@@ -98,10 +104,17 @@ namespace AsynchronousBenchmarks
         {
             InitTotalMemory();
             var initialTotalMemory = GetTotalMemory();
-            UnityFx_ExecuteAsync().Done();
-            UnityFx_ExecuteAsync().Done();
-            s_unityFxHelper.ResolvePending();
+            ExecuteForSurvived();
             _pooledMemory = GetTotalMemory() - initialTotalMemory;
+
+            // Prevents IAsyncOperation surviving on the stack during the measurement.
+            [MethodImpl(MethodImplOptions.NoInlining | CodeGenHelper.AggressiveOptimizationOption)]
+            static void ExecuteForSurvived()
+            {
+                UnityFx_ExecuteAsync().Done();
+                UnityFx_ExecuteAsync().Done();
+                s_unityFxHelper.ResolvePending();
+            }
         }
 
         [Benchmark]

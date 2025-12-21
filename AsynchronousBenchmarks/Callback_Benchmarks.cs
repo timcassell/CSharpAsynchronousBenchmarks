@@ -1,5 +1,4 @@
 ﻿using BenchmarkDotNet.Attributes;
-using Helper;
 using System.Collections.Generic;
 using System;
 using System.Runtime.CompilerServices;
@@ -47,10 +46,17 @@ namespace AsynchronousBenchmarks
         {
             InitTotalMemory();
             var initialTotalMemory = GetTotalMemory();
-            Callback_ExecuteAsync(null);
-            Callback_ExecuteAsync(null);
-            s_callbackHelper.ResolvePending();
+            ExecuteForSurvived();
             _pooledMemory = GetTotalMemory() - initialTotalMemory;
+
+            // Not really necessary, but matches the shape of the other benchmarks.
+            [MethodImpl(MethodImplOptions.NoInlining | CodeGenHelper.AggressiveOptimizationOption)]
+            static void ExecuteForSurvived()
+            {
+                Callback_ExecuteAsync(null);
+                Callback_ExecuteAsync(null);
+                s_callbackHelper.ResolvePending();
+            }
         }
 
         [Benchmark(Baseline = true)]

@@ -1,6 +1,5 @@
 ﻿using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Portability;
-using Helper;
 using Proto.Promises;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -48,12 +47,19 @@ namespace AsynchronousBenchmarks
         {
             InitTotalMemory();
             var initialTotalMemory = GetTotalMemory();
-            // Not clearing the pool to stay as fair as possible with UniTask, which doesn't have an API to clear its object pool. We just run the method twice without resolving the deferreds instead.
-            //Promise.Manager.ClearObjectPool();
-            Proto_ExecuteAsync().Forget();
-            Proto_ExecuteAsync().Forget();
-            s_protoHelper.ResolvePending();
+            ExecuteForSurvived();
             _pooledMemory = GetTotalMemory() - initialTotalMemory;
+
+            // Prevents Promise surviving on the stack during the measurement.
+            [MethodImpl(MethodImplOptions.NoInlining | CodeGenHelper.AggressiveOptimizationOption)]
+            static void ExecuteForSurvived()
+            {
+                // Not clearing the pool to stay as fair as possible with UniTask, which doesn't have an API to clear its object pool. We just run the method twice without resolving the deferreds instead.
+                //Promise.Manager.ClearObjectPool();
+                Proto_ExecuteAsync().Forget();
+                Proto_ExecuteAsync().Forget();
+                s_protoHelper.ResolvePending();
+            }
         }
 
         [Benchmark]
@@ -99,12 +105,19 @@ namespace AsynchronousBenchmarks
         {
             InitTotalMemory();
             var initialTotalMemory = GetTotalMemory();
-            // Not clearing the pool to stay as fair as possible with UniTask, which doesn't have an API to clear its object pool. We just run the method twice without resolving the deferreds instead.
-            //Promise.Manager.ClearObjectPool();
-            Proto_ExecuteAsync().Forget();
-            Proto_ExecuteAsync().Forget();
-            s_protoHelper.ResolvePending();
+            ExecuteForSurvived();
             _pooledMemory = GetTotalMemory() - initialTotalMemory;
+
+            // Prevents Promise surviving on the stack during the measurement.
+            [MethodImpl(MethodImplOptions.NoInlining | CodeGenHelper.AggressiveOptimizationOption)]
+            static void ExecuteForSurvived()
+            {
+                // Not clearing the pool to stay as fair as possible with UniTask, which doesn't have an API to clear its object pool. We just run the method twice without resolving the deferreds instead.
+                //Promise.Manager.ClearObjectPool();
+                Proto_ExecuteAsync().Forget();
+                Proto_ExecuteAsync().Forget();
+                s_protoHelper.ResolvePending();
+            }
         }
 
         [Benchmark]
